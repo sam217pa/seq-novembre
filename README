@@ -1,0 +1,28 @@
+* Séquençage de novembre
+Le dossier contient les données du séquençage des deux plaques envoyées à la
+suite des manips de Anne-Laure. 
+
+#+BEGIN_SRC sh :results verbatim 
+tree ./
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+./
+|-- README
+|-- analysis
+|-- data
+|   `-- raw_seq_nvbr
+|       |-- 1369607.zip
+|       `-- 1369628.zip
+`-- scripts
+
+4 directories, 3 files
+#+end_example
+
+** analysis 
+Contient les résultats des analyses. Graphes ou données transformées. 
+
+** scripts 
+Contient les différents scripts nécessaires pour aboutir aux contenus
+d'~analysis~. 
