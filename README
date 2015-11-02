@@ -1,11 +1,15 @@
-[[elisp:(org-babel-tangle-file)][Tangle Scripts]]
+# -*- mode: org; -*-
 
-* Séquençage de novembre
+#+begin_src emacs-lisp :results none :export none
+  (org-babel-tangle-file "README")
+#+end_src
+
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips de Anne-Laure. 
 
+* structure
 #+BEGIN_SRC sh :results verbatim 
-tree ./
+tree ./ -L 2
 #+END_SRC
 
 #+RESULTS:
@@ -16,625 +20,64 @@ tree ./
 |-- data
 |   |-- 1369607.INDEL.csv
 |   |-- 1369607.SNP.csv
-|   |-- 1369628
-|   |   |-- 1369628.INDEL.csv
-|   |   |-- 1369628.SNP.csv
-|   |   |-- Analysis_Summary-Sanger_Pipeline.pdf
-|   |   |-- pS1-1073.ab1
-|   |   |-- pS1-1073.fas
-|   |   |-- pS1-1073.seq
-|   |   |-- pS10-1073.ab1
-|   |   |-- pS10-1073.fas
-|   |   |-- pS10-1073.seq
-|   |   |-- pS11-1073.ab1
-|   |   |-- pS11-1073.fas
-|   |   |-- pS11-1073.seq
-|   |   |-- pS12-1073.ab1
-|   |   |-- pS12-1073.fas
-|   |   |-- pS12-1073.seq
-|   |   |-- pS13-1073.ab1
-|   |   |-- pS13-1073.fas
-|   |   |-- pS13-1073.seq
-|   |   |-- pS14-1073.ab1
-|   |   |-- pS14-1073.fas
-|   |   |-- pS14-1073.seq
-|   |   |-- pS15-1073.ab1
-|   |   |-- pS15-1073.fas
-|   |   |-- pS15-1073.seq
-|   |   |-- pS16-1073.ab1
-|   |   |-- pS16-1073.fas
-|   |   |-- pS16-1073.seq
-|   |   |-- pS17-1073.ab1
-|   |   |-- pS17-1073.fas
-|   |   |-- pS17-1073.seq
-|   |   |-- pS18-1073.ab1
-|   |   |-- pS18-1073.fas
-|   |   |-- pS18-1073.seq
-|   |   |-- pS19-1073.ab1
-|   |   |-- pS19-1073.fas
-|   |   |-- pS19-1073.seq
-|   |   |-- pS2-1073.ab1
-|   |   |-- pS2-1073.fas
-|   |   |-- pS2-1073.seq
-|   |   |-- pS20-1073.ab1
-|   |   |-- pS20-1073.fas
-|   |   |-- pS20-1073.seq
-|   |   |-- pS21-1073.ab1
-|   |   |-- pS21-1073.fas
-|   |   |-- pS21-1073.seq
-|   |   |-- pS22-1073.ab1
-|   |   |-- pS22-1073.fas
-|   |   |-- pS22-1073.seq
-|   |   |-- pS23-1073.ab1
-|   |   |-- pS23-1073.fas
-|   |   |-- pS23-1073.seq
-|   |   |-- pS24-1073.ab1
-|   |   |-- pS24-1073.fas
-|   |   |-- pS24-1073.seq
-|   |   |-- pS25-1073.ab1
-|   |   |-- pS25-1073.fas
-|   |   |-- pS25-1073.seq
-|   |   |-- pS26-1073.ab1
-|   |   |-- pS26-1073.fas
-|   |   |-- pS26-1073.seq
-|   |   |-- pS27-1073.ab1
-|   |   |-- pS27-1073.fas
-|   |   |-- pS27-1073.seq
-|   |   |-- pS28-1073.ab1
-|   |   |-- pS28-1073.fas
-|   |   |-- pS28-1073.seq
-|   |   |-- pS29-1073.ab1
-|   |   |-- pS29-1073.fas
-|   |   |-- pS29-1073.seq
-|   |   |-- pS3-1073.ab1
-|   |   |-- pS3-1073.fas
-|   |   |-- pS3-1073.seq
-|   |   |-- pS30-1073.ab1
-|   |   |-- pS30-1073.fas
-|   |   |-- pS30-1073.seq
-|   |   |-- pS31-1073.ab1
-|   |   |-- pS31-1073.fas
-|   |   |-- pS31-1073.seq
-|   |   |-- pS32-1073.ab1
-|   |   |-- pS32-1073.fas
-|   |   |-- pS32-1073.seq
-|   |   |-- pS33-1073.ab1
-|   |   |-- pS33-1073.fas
-|   |   |-- pS33-1073.seq
-|   |   |-- pS34-1073.ab1
-|   |   |-- pS34-1073.fas
-|   |   |-- pS34-1073.seq
-|   |   |-- pS35-1073.ab1
-|   |   |-- pS35-1073.fas
-|   |   |-- pS35-1073.seq
-|   |   |-- pS36-1073.ab1
-|   |   |-- pS36-1073.fas
-|   |   |-- pS36-1073.seq
-|   |   |-- pS37-1073.ab1
-|   |   |-- pS37-1073.fas
-|   |   |-- pS37-1073.seq
-|   |   |-- pS38-1073.ab1
-|   |   |-- pS38-1073.fas
-|   |   |-- pS38-1073.seq
-|   |   |-- pS39-1073.ab1
-|   |   |-- pS39-1073.fas
-|   |   |-- pS39-1073.seq
-|   |   |-- pS4-1073.ab1
-|   |   |-- pS4-1073.fas
-|   |   |-- pS4-1073.seq
-|   |   |-- pS40-1073.ab1
-|   |   |-- pS40-1073.fas
-|   |   |-- pS40-1073.seq
-|   |   |-- pS41-1073.ab1
-|   |   |-- pS41-1073.fas
-|   |   |-- pS41-1073.seq
-|   |   |-- pS42-1073.ab1
-|   |   |-- pS42-1073.fas
-|   |   |-- pS42-1073.seq
-|   |   |-- pS43-1073.ab1
-|   |   |-- pS43-1073.fas
-|   |   |-- pS43-1073.seq
-|   |   |-- pS44-1073.ab1
-|   |   |-- pS44-1073.fas
-|   |   |-- pS44-1073.seq
-|   |   |-- pS45-1073.ab1
-|   |   |-- pS45-1073.fas
-|   |   |-- pS45-1073.seq
-|   |   |-- pS46-1073.ab1
-|   |   |-- pS46-1073.fas
-|   |   |-- pS46-1073.seq
-|   |   |-- pS47-1073.ab1
-|   |   |-- pS47-1073.fas
-|   |   |-- pS47-1073.seq
-|   |   |-- pS48-1073.ab1
-|   |   |-- pS48-1073.fas
-|   |   |-- pS48-1073.seq
-|   |   |-- pS49-1073.ab1
-|   |   |-- pS49-1073.fas
-|   |   |-- pS49-1073.seq
-|   |   |-- pS5-1073.ab1
-|   |   |-- pS5-1073.fas
-|   |   |-- pS5-1073.seq
-|   |   |-- pS50-1073.ab1
-|   |   |-- pS50-1073.fas
-|   |   |-- pS50-1073.seq
-|   |   |-- pS51-1073.ab1
-|   |   |-- pS51-1073.fas
-|   |   |-- pS51-1073.seq
-|   |   |-- pS52-1073.ab1
-|   |   |-- pS52-1073.fas
-|   |   |-- pS52-1073.seq
-|   |   |-- pS53-1073.ab1
-|   |   |-- pS53-1073.fas
-|   |   |-- pS53-1073.seq
-|   |   |-- pS54-1073.ab1
-|   |   |-- pS54-1073.fas
-|   |   |-- pS54-1073.seq
-|   |   |-- pS55-1073.ab1
-|   |   |-- pS55-1073.fas
-|   |   |-- pS55-1073.seq
-|   |   |-- pS56-1073.ab1
-|   |   |-- pS56-1073.fas
-|   |   |-- pS56-1073.seq
-|   |   |-- pS57-1073.ab1
-|   |   |-- pS57-1073.fas
-|   |   |-- pS57-1073.seq
-|   |   |-- pS58-1073.ab1
-|   |   |-- pS58-1073.fas
-|   |   |-- pS58-1073.seq
-|   |   |-- pS59-1073.ab1
-|   |   |-- pS59-1073.fas
-|   |   |-- pS59-1073.seq
-|   |   |-- pS6-1073.ab1
-|   |   |-- pS6-1073.fas
-|   |   |-- pS6-1073.seq
-|   |   |-- pS60-1073.ab1
-|   |   |-- pS60-1073.fas
-|   |   |-- pS60-1073.seq
-|   |   |-- pS61-1073.ab1
-|   |   |-- pS61-1073.fas
-|   |   |-- pS61-1073.seq
-|   |   |-- pS62-1073.ab1
-|   |   |-- pS62-1073.fas
-|   |   |-- pS62-1073.seq
-|   |   |-- pS63-1073.ab1
-|   |   |-- pS63-1073.fas
-|   |   |-- pS63-1073.seq
-|   |   |-- pS64-1073.ab1
-|   |   |-- pS64-1073.fas
-|   |   |-- pS64-1073.seq
-|   |   |-- pS65-1073.ab1
-|   |   |-- pS65-1073.fas
-|   |   |-- pS65-1073.seq
-|   |   |-- pS66-1073.ab1
-|   |   |-- pS66-1073.fas
-|   |   |-- pS66-1073.seq
-|   |   |-- pS67-1073.ab1
-|   |   |-- pS67-1073.fas
-|   |   |-- pS67-1073.seq
-|   |   |-- pS68-1073.ab1
-|   |   |-- pS68-1073.fas
-|   |   |-- pS68-1073.seq
-|   |   |-- pS69-1073.ab1
-|   |   |-- pS69-1073.fas
-|   |   |-- pS69-1073.seq
-|   |   |-- pS7-1073.ab1
-|   |   |-- pS7-1073.fas
-|   |   |-- pS7-1073.seq
-|   |   |-- pS70-1073.ab1
-|   |   |-- pS70-1073.fas
-|   |   |-- pS70-1073.seq
-|   |   |-- pS71-1073.ab1
-|   |   |-- pS71-1073.fas
-|   |   |-- pS71-1073.seq
-|   |   |-- pS72-1073.ab1
-|   |   |-- pS72-1073.fas
-|   |   |-- pS72-1073.seq
-|   |   |-- pS73-1073.ab1
-|   |   |-- pS73-1073.fas
-|   |   |-- pS73-1073.seq
-|   |   |-- pS74-1073.ab1
-|   |   |-- pS74-1073.fas
-|   |   |-- pS74-1073.seq
-|   |   |-- pS75-1073.ab1
-|   |   |-- pS75-1073.fas
-|   |   |-- pS75-1073.seq
-|   |   |-- pS76-1073.ab1
-|   |   |-- pS76-1073.fas
-|   |   |-- pS76-1073.seq
-|   |   |-- pS77-1073.ab1
-|   |   |-- pS77-1073.fas
-|   |   |-- pS77-1073.seq
-|   |   |-- pS78-1073.ab1
-|   |   |-- pS78-1073.fas
-|   |   |-- pS78-1073.seq
-|   |   |-- pS79-1073.ab1
-|   |   |-- pS79-1073.fas
-|   |   |-- pS79-1073.seq
-|   |   |-- pS8-1073.ab1
-|   |   |-- pS8-1073.fas
-|   |   |-- pS8-1073.seq
-|   |   |-- pS80-1073.ab1
-|   |   |-- pS80-1073.fas
-|   |   |-- pS80-1073.seq
-|   |   |-- pS81-1073.ab1
-|   |   |-- pS81-1073.fas
-|   |   |-- pS81-1073.seq
-|   |   |-- pS82-1073.ab1
-|   |   |-- pS82-1073.fas
-|   |   |-- pS82-1073.seq
-|   |   |-- pS83-1073.ab1
-|   |   |-- pS83-1073.fas
-|   |   |-- pS83-1073.seq
-|   |   |-- pS84-1073.ab1
-|   |   |-- pS84-1073.fas
-|   |   |-- pS84-1073.seq
-|   |   |-- pS85-1073.ab1
-|   |   |-- pS85-1073.fas
-|   |   |-- pS85-1073.seq
-|   |   |-- pS86-1073.ab1
-|   |   |-- pS86-1073.fas
-|   |   |-- pS86-1073.seq
-|   |   |-- pS87-1073.ab1
-|   |   |-- pS87-1073.fas
-|   |   |-- pS87-1073.seq
-|   |   |-- pS88-1073.ab1
-|   |   |-- pS88-1073.fas
-|   |   |-- pS88-1073.seq
-|   |   |-- pS89-1073.ab1
-|   |   |-- pS89-1073.fas
-|   |   |-- pS89-1073.seq
-|   |   |-- pS9-1073.ab1
-|   |   |-- pS9-1073.fas
-|   |   |-- pS9-1073.seq
-|   |   |-- pS90-1073.ab1
-|   |   |-- pS90-1073.fas
-|   |   |-- pS90-1073.seq
-|   |   |-- pS91-1073.ab1
-|   |   |-- pS91-1073.fas
-|   |   |-- pS91-1073.seq
-|   |   |-- pS92-1073.ab1
-|   |   |-- pS92-1073.fas
-|   |   |-- pS92-1073.seq
-|   |   |-- pS93-1073.ab1
-|   |   |-- pS93-1073.fas
-|   |   |-- pS93-1073.seq
-|   |   |-- pS94-1073.ab1
-|   |   |-- pS94-1073.fas
-|   |   |-- pS94-1073.seq
-|   |   |-- pS95-1073.ab1
-|   |   |-- pS95-1073.fas
-|   |   |-- pS95-1073.seq
-|   |   |-- pS96-1073.ab1
-|   |   |-- pS96-1073.fas
-|   |   `-- pS96-1073.seq
+|   |-- 1369628.INDEL.csv
+|   |-- 1369628.SNP.csv
 |   |-- Analysis_Summary-Sanger_Pipeline.pdf
-|   |-- pW1-1073.ab1
-|   |-- pW1-1073.fas
-|   |-- pW1-1073.seq
-|   |-- pW10-1073.ab1
-|   |-- pW10-1073.fas
-|   |-- pW10-1073.seq
-|   |-- pW11-1073.ab1
-|   |-- pW11-1073.fas
-|   |-- pW11-1073.seq
-|   |-- pW12-1073.ab1
-|   |-- pW12-1073.fas
-|   |-- pW12-1073.seq
-|   |-- pW13-1073.ab1
-|   |-- pW13-1073.fas
-|   |-- pW13-1073.seq
-|   |-- pW14-1073.ab1
-|   |-- pW14-1073.fas
-|   |-- pW14-1073.seq
-|   |-- pW15-1073.ab1
-|   |-- pW15-1073.fas
-|   |-- pW15-1073.seq
-|   |-- pW16-1073.ab1
-|   |-- pW16-1073.fas
-|   |-- pW16-1073.seq
-|   |-- pW17-1073.ab1
-|   |-- pW17-1073.fas
-|   |-- pW17-1073.seq
-|   |-- pW18-1073.ab1
-|   |-- pW18-1073.fas
-|   |-- pW18-1073.seq
-|   |-- pW19-1073.ab1
-|   |-- pW19-1073.fas
-|   |-- pW19-1073.seq
-|   |-- pW2-1073.ab1
-|   |-- pW2-1073.fas
-|   |-- pW2-1073.seq
-|   |-- pW20-1073.ab1
-|   |-- pW20-1073.fas
-|   |-- pW20-1073.seq
-|   |-- pW21-1073.ab1
-|   |-- pW21-1073.fas
-|   |-- pW21-1073.seq
-|   |-- pW22-1073.ab1
-|   |-- pW22-1073.fas
-|   |-- pW22-1073.seq
-|   |-- pW23-1073.ab1
-|   |-- pW23-1073.fas
-|   |-- pW23-1073.seq
-|   |-- pW24-1073.ab1
-|   |-- pW24-1073.fas
-|   |-- pW24-1073.seq
-|   |-- pW25-1073.ab1
-|   |-- pW25-1073.fas
-|   |-- pW25-1073.seq
-|   |-- pW26-1073.ab1
-|   |-- pW26-1073.fas
-|   |-- pW26-1073.seq
-|   |-- pW27-1073.ab1
-|   |-- pW27-1073.fas
-|   |-- pW27-1073.seq
-|   |-- pW28-1073.ab1
-|   |-- pW28-1073.fas
-|   |-- pW28-1073.seq
-|   |-- pW29-1073.ab1
-|   |-- pW29-1073.fas
-|   |-- pW29-1073.seq
-|   |-- pW3-1073.ab1
-|   |-- pW3-1073.fas
-|   |-- pW3-1073.seq
-|   |-- pW30-1073.ab1
-|   |-- pW30-1073.fas
-|   |-- pW30-1073.seq
-|   |-- pW31-1073.ab1
-|   |-- pW31-1073.fas
-|   |-- pW31-1073.seq
-|   |-- pW32-1073.ab1
-|   |-- pW32-1073.fas
-|   |-- pW32-1073.seq
-|   |-- pW33-1073.ab1
-|   |-- pW33-1073.fas
-|   |-- pW33-1073.seq
-|   |-- pW34-1073.ab1
-|   |-- pW34-1073.fas
-|   |-- pW34-1073.seq
-|   |-- pW35-1073.ab1
-|   |-- pW35-1073.fas
-|   |-- pW35-1073.seq
-|   |-- pW36-1073.ab1
-|   |-- pW36-1073.fas
-|   |-- pW36-1073.seq
-|   |-- pW37-1073.ab1
-|   |-- pW37-1073.fas
-|   |-- pW37-1073.seq
-|   |-- pW38-1073.ab1
-|   |-- pW38-1073.fas
-|   |-- pW38-1073.seq
-|   |-- pW39-1073.ab1
-|   |-- pW39-1073.fas
-|   |-- pW39-1073.seq
-|   |-- pW4-1073.ab1
-|   |-- pW4-1073.fas
-|   |-- pW4-1073.seq
-|   |-- pW40-1073.ab1
-|   |-- pW40-1073.fas
-|   |-- pW40-1073.seq
-|   |-- pW41-1073.ab1
-|   |-- pW41-1073.fas
-|   |-- pW41-1073.seq
-|   |-- pW42-1073.ab1
-|   |-- pW42-1073.fas
-|   |-- pW42-1073.seq
-|   |-- pW43-1073.ab1
-|   |-- pW43-1073.fas
-|   |-- pW43-1073.seq
-|   |-- pW44-1073.ab1
-|   |-- pW44-1073.fas
-|   |-- pW44-1073.seq
-|   |-- pW45-1073.ab1
-|   |-- pW45-1073.fas
-|   |-- pW45-1073.seq
-|   |-- pW46-1073.ab1
-|   |-- pW46-1073.fas
-|   |-- pW46-1073.seq
-|   |-- pW47-1073.ab1
-|   |-- pW47-1073.fas
-|   |-- pW47-1073.seq
-|   |-- pW48-1073.ab1
-|   |-- pW48-1073.fas
-|   |-- pW48-1073.seq
-|   |-- pW49-1073.ab1
-|   |-- pW49-1073.fas
-|   |-- pW49-1073.seq
-|   |-- pW5-1073.ab1
-|   |-- pW5-1073.fas
-|   |-- pW5-1073.seq
-|   |-- pW50-1073.ab1
-|   |-- pW50-1073.fas
-|   |-- pW50-1073.seq
-|   |-- pW51-1073.ab1
-|   |-- pW51-1073.fas
-|   |-- pW51-1073.seq
-|   |-- pW52-1073.ab1
-|   |-- pW52-1073.fas
-|   |-- pW52-1073.seq
-|   |-- pW53-1073.ab1
-|   |-- pW53-1073.fas
-|   |-- pW53-1073.seq
-|   |-- pW54-1073.ab1
-|   |-- pW54-1073.fas
-|   |-- pW54-1073.seq
-|   |-- pW55-1073.ab1
-|   |-- pW55-1073.fas
-|   |-- pW55-1073.seq
-|   |-- pW56-1073.ab1
-|   |-- pW56-1073.fas
-|   |-- pW56-1073.seq
-|   |-- pW57-1073.ab1
-|   |-- pW57-1073.fas
-|   |-- pW57-1073.seq
-|   |-- pW58-1073.ab1
-|   |-- pW58-1073.fas
-|   |-- pW58-1073.seq
-|   |-- pW59-1073.ab1
-|   |-- pW59-1073.fas
-|   |-- pW59-1073.seq
-|   |-- pW6-1073.ab1
-|   |-- pW6-1073.fas
-|   |-- pW6-1073.seq
-|   |-- pW60-1073.ab1
-|   |-- pW60-1073.fas
-|   |-- pW60-1073.seq
-|   |-- pW61-1073.ab1
-|   |-- pW61-1073.fas
-|   |-- pW61-1073.seq
-|   |-- pW62-1073.ab1
-|   |-- pW62-1073.fas
-|   |-- pW62-1073.seq
-|   |-- pW63-1073.ab1
-|   |-- pW63-1073.fas
-|   |-- pW63-1073.seq
-|   |-- pW64-1073.ab1
-|   |-- pW64-1073.fas
-|   |-- pW64-1073.seq
-|   |-- pW65-1073.ab1
-|   |-- pW65-1073.fas
-|   |-- pW65-1073.seq
-|   |-- pW66-1073.ab1
-|   |-- pW66-1073.fas
-|   |-- pW66-1073.seq
-|   |-- pW67-1073.ab1
-|   |-- pW67-1073.fas
-|   |-- pW67-1073.seq
-|   |-- pW68-1073.ab1
-|   |-- pW68-1073.fas
-|   |-- pW68-1073.seq
-|   |-- pW69-1073.ab1
-|   |-- pW69-1073.fas
-|   |-- pW69-1073.seq
-|   |-- pW7-1073.ab1
-|   |-- pW7-1073.fas
-|   |-- pW7-1073.seq
-|   |-- pW70-1073.ab1
-|   |-- pW70-1073.fas
-|   |-- pW70-1073.seq
-|   |-- pW71-1073.ab1
-|   |-- pW71-1073.fas
-|   |-- pW71-1073.seq
-|   |-- pW72-1073.ab1
-|   |-- pW72-1073.fas
-|   |-- pW72-1073.seq
-|   |-- pW73-1073.ab1
-|   |-- pW73-1073.fas
-|   |-- pW73-1073.seq
-|   |-- pW74-1073.ab1
-|   |-- pW74-1073.fas
-|   |-- pW74-1073.seq
-|   |-- pW75-1073.ab1
-|   |-- pW75-1073.fas
-|   |-- pW75-1073.seq
-|   |-- pW76-1073.ab1
-|   |-- pW76-1073.fas
-|   |-- pW76-1073.seq
-|   |-- pW77-1073.ab1
-|   |-- pW77-1073.fas
-|   |-- pW77-1073.seq
-|   |-- pW78-1073.ab1
-|   |-- pW78-1073.fas
-|   |-- pW78-1073.seq
-|   |-- pW79-1073.ab1
-|   |-- pW79-1073.fas
-|   |-- pW79-1073.seq
-|   |-- pW8-1073.ab1
-|   |-- pW8-1073.fas
-|   |-- pW8-1073.seq
-|   |-- pW80-1073.ab1
-|   |-- pW80-1073.fas
-|   |-- pW80-1073.seq
-|   |-- pW81-1073.ab1
-|   |-- pW81-1073.fas
-|   |-- pW81-1073.seq
-|   |-- pW82-1073.ab1
-|   |-- pW82-1073.fas
-|   |-- pW82-1073.seq
-|   |-- pW83-1073.ab1
-|   |-- pW83-1073.fas
-|   |-- pW83-1073.seq
-|   |-- pW84-1073.ab1
-|   |-- pW84-1073.fas
-|   |-- pW84-1073.seq
-|   |-- pW85-1073.ab1
-|   |-- pW85-1073.fas
-|   |-- pW85-1073.seq
-|   |-- pW86-1073.ab1
-|   |-- pW86-1073.fas
-|   |-- pW86-1073.seq
-|   |-- pW87-1073.ab1
-|   |-- pW87-1073.fas
-|   |-- pW87-1073.seq
-|   |-- pW88-1073.ab1
-|   |-- pW88-1073.fas
-|   |-- pW88-1073.seq
-|   |-- pW89-1073.ab1
-|   |-- pW89-1073.fas
-|   |-- pW89-1073.seq
-|   |-- pW9-1073.ab1
-|   |-- pW9-1073.fas
-|   |-- pW9-1073.seq
-|   |-- pW90-1073.ab1
-|   |-- pW90-1073.fas
-|   |-- pW90-1073.seq
-|   |-- pW91-1073.ab1
-|   |-- pW91-1073.fas
-|   |-- pW91-1073.seq
-|   |-- pW92-1073.ab1
-|   |-- pW92-1073.fas
-|   |-- pW92-1073.seq
-|   |-- pW93-1073.ab1
-|   |-- pW93-1073.fas
-|   |-- pW93-1073.seq
-|   |-- pW94-1073.ab1
-|   |-- pW94-1073.fas
-|   |-- pW94-1073.seq
-|   |-- pW95-1073.ab1
-|   |-- pW95-1073.fas
-|   |-- pW95-1073.seq
-|   |-- pW96-1073.ab1
-|   |-- pW96-1073.fas
-|   |-- pW96-1073.seq
-|   `-- raw_seq_nvbr
-|       |-- 1369607.zip
-|       `-- 1369628.zip
+|   |-- fasta
+|   |-- raw_seq_nvbr
+|   |-- seq
+|   `-- spectrograms
 `-- scripts
+    |-- exploratory_analysis.R
+    `-- extract_raw_data.sh
 
-5 directories, 585 files
+7 directories, 8 files
 #+end_example
-** data
-
+* data
+** raw_seq_nvbr
+Contient les deux dataset au format .zip. DO NOT TOUCH.
+** extraction des données
+Pour extraire les données du fichier brut .zip à la structure de données.
 
 #+BEGIN_SRC sh :tangle ./scripts/extract_raw_data.sh 
-cd ./data
-# extraction des données brutes
-unzip raw_seq_nvbr/1369607.zip
-unzip raw_seq_nvbr/1369628.zip
-# déplace tout les fichiers dans des dossiers adaptés 
-find . -name "*.fas" -exec mv -i {} -t ./fasta/ \;
-find . -name "*.ab1" -exec mv -i {} -t ./spectrograms/ \;
-find . -name "*.seq" -exec mv -i {} -t ./seq/ \;
-# déplace le contenu du dossier inutile dans le présent dossier
-mv 1369628/* ./
-rm -r 1369628 # supprime le dossier
+  #!/bin/bash 
+
+  # Le script qui extrait les données depuis les fichiers zip bruts et qui met en
+  # place la structure de fichier.
+
+  cd ./data # cd ../data quand dans dossier `scripts'
+  # extraction des données brutes
+  unzip raw_seq_nvbr/1369607.zip
+  unzip raw_seq_nvbr/1369628.zip
+  # déplace tout les fichiers dans des dossiers adaptés 
+  find . -name "*.fas" -exec mv -i {} -t ./fasta/ \;
+  find . -name "*.ab1" -exec mv -i {} -t ./spectrograms/ \;
+  find . -name "*.seq" -exec mv -i {} -t ./seq/ \;
+  # déplace le contenu du dossier inutile dans le présent dossier
+  mv 1369628/* ./
+  rm -r 1369628 # supprime le dossier
 #+END_SRC
 
-*** raw_seq_nvbr
-Contient les deux dataset au format .zip. DO NOT TOUCH.
-
-
-** analysis 
+* analysis 
 Contient les résultats des analyses. Graphes ou données transformées. 
-
-** scripts 
+* scripts 
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
 
 #+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
-library(dplyr)
-library(ggplot2)
+  library(dplyr)
+  library(ggplot2)
+  library(readr)
 
+  read_result <- function(filename){
+    readr::read_delim(filename, delim = ";")
+  }
+
+  snp_strong   <- read_result("./data/1369628.SNP.csv")
+  snp_weak   <- read_result("./data/1369607.SNP.csv")
+  indel_strong <- read_result("./data/1369628.INDEL.csv")
+  indel_weak <- read_result("./data/1369607.INDEL.csv")
+  snp_weak$mutant <- "weak"
+  snp_strong$mutant <- "strong"
 #+END_SRC

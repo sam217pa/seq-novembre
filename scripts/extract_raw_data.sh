@@ -1,4 +1,9 @@
-cd ./data
+#!/bin/bash 
+
+# Le script qui extrait les données depuis les fichiers zip bruts et qui met en
+# place la structure de fichier.
+
+cd ./data # cd ../data quand dans dossier `scripts'
 # extraction des données brutes
 unzip raw_seq_nvbr/1369607.zip
 unzip raw_seq_nvbr/1369628.zip
