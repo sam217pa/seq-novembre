@@ -64,7 +64,7 @@ Contient les résultats des analyses. Graphes ou données transformées.
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
-
+** .csv analyses
 #+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
   library(dplyr)
   library(ggplot2)
@@ -80,4 +80,30 @@ d'~analysis~.
   indel_weak <- read_result("./data/1369607.INDEL.csv")
   snp_weak$mutant <- "weak"
   snp_strong$mutant <- "strong"
+#+END_SRC
+
+** ab1 python parser
+
+C'est un script python qui convertit les fichiers .ab1 du dossier
+[[./data/spectrograms/]]  en fichier .fastq, dans le dossier [[./data/fastq/]].  
+Trois choses :
+- lire le fichier en entrée
+- transformer en fastq
+- écrire sur le disque. 
+
+#+BEGIN_SRC python :tangle ./scripts/ab1_parser.py
+  #!/usr/bin/env python
+  import os
+  from Bio import SeqIO
+
+  # lit tout les fichiers du dossier spectrogram
+  for file_name in os.listdir("../data/spectrograms/"):
+      # check if it ends with .ab1
+      if file_name.endswith(".ab1"):
+          print("parsing sequences from " + file_name)
+          
+          ab1_in = "../data/spectrograms/" + file_name
+          fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
+          # convert the file
+          SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
 #+END_SRC
