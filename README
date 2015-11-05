@@ -107,3 +107,21 @@ Trois choses :
           # convert the file
           SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
 #+END_SRC
+
+#+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
+  #!/usr/bin/env python
+
+  from __future__ import print_function
+  import os
+  import sys
+  from StringIO import StringIO
+  from Bio import SeqIO
+
+  def ab1_to_fastq(ab1_in, fastq_out):
+      assert ab1_in.rstrip().endswith(".ab1"), "not an .ab1 file"
+      return SeqIO.convert(ab1_in.rstrip(), "abi", fastq_out, "fastq")
+
+  for line in sys.stdin:
+      output = StringIO("")
+      sys.stdout.write(ab1_to_fastq (line, output))
+#+END_SRC

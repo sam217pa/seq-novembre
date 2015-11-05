@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-import sys
 import os
 from Bio import SeqIO
 
-
-# lit tout les fichiers du dossiers
+# lit tout les fichiers du dossier spectrogram
 for file_name in os.listdir("../data/spectrograms/"):
     # check if it ends with .ab1
     if file_name.endswith(".ab1"):
-        print("reading sequences from " + file_name)
+        print("parsing sequences from " + file_name)
         
         ab1_in = "../data/spectrograms/" + file_name
         fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
