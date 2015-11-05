@@ -110,18 +110,24 @@ Trois choses :
 
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
+  """
+  ============
+  ab1_to_fastq
+  ============
+
+  Un module pour convertir le fichier .ab1 en fichier fastq.
+  """
 
   from __future__ import print_function
-  import os
   import sys
-  from StringIO import StringIO
   from Bio import SeqIO
 
-  def ab1_to_fastq(ab1_in, fastq_out):
-      assert ab1_in.rstrip().endswith(".ab1"), "not an .ab1 file"
-      return SeqIO.convert(ab1_in.rstrip(), "abi", fastq_out, "fastq")
 
   for line in sys.stdin:
-      output = StringIO("")
-      sys.stdout.write(ab1_to_fastq (line, output))
+      assert line.rstrip().endswith(".ab1"), "not an ab1 file"
+      with open(line.rstrip(), "rb") as ab1_file:
+          ab1_record = SeqIO.read(ab1_file, "abi")
+          print(ab1_record.format("fastq"))
+
 #+END_SRC
+

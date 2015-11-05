@@ -6,10 +6,14 @@ import sys
 from StringIO import StringIO
 from Bio import SeqIO
 
-def ab1_to_fastq(ab1_in, fastq_out):
-    assert "ab1" in ab1_in, "not an .ab1 file"
-    return SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
+# def ab1_to_fastq(ab1_in, fastq_out):
+#     assert ab1_in.rstrip().endswith(".ab1"), "not an .ab1 file"
+#     return SeqIO.convert(ab1_in.rstrip(), "abi", fastq_out, "fastq")
+
+# for line in sys.stdin:
+#     output = StringIO("")
+#     sys.stdout.write(str(ab1_to_fastq (line, output)))
 
 for line in sys.stdin:
-    output = StringIO("")
-    sys.stdout.write(ab1_to_fastq (line, output))
+    ab1_record = SeqIO.read(open(line.rstrip(), "rb"), "abi")
+    print(ab1_record.format("fastq"))
