@@ -15,24 +15,40 @@ tree ./ -L 2
 #+RESULTS:
 #+begin_example
 ./
-|-- README
-|-- analysis
-|-- data
-|   |-- 1369607.INDEL.csv
-|   |-- 1369607.SNP.csv
-|   |-- 1369628.INDEL.csv
-|   |-- 1369628.SNP.csv
-|   |-- Analysis_Summary-Sanger_Pipeline.pdf
-|   |-- fasta
-|   |-- raw_seq_nvbr
-|   |-- seq
-|   `-- spectrograms
-`-- scripts
-    |-- exploratory_analysis.R
-    `-- extract_raw_data.sh
+├── README
+├── README[*Org\ Src\ README[\ python\ ]*]
+├── analysis
+│   └── vincent_plot.pdf
+├── data
+│   ├── 1369607.INDEL.csv
+│   ├── 1369607.SNP.csv
+│   ├── 1369628.INDEL.csv
+│   ├── 1369628.SNP.csv
+│   ├── Analysis_Summary-Sanger_Pipeline.pdf
+│   ├── all.fasta
+│   ├── fasta
+│   ├── fastq
+│   ├── raw_seq_nvbr
+│   ├── seq
+│   └── spectrograms
+└── scripts
+    ├── ab1_parser.py
+    ├── ab1_to_fastq
+    ├── exploratory_analysis.R
+    └── extract_raw_data.sh
 
-7 directories, 8 files
+8 directories, 13 files
 #+end_example
+
+| dir      | file                | description                                                  |
+|----------+---------------------+--------------------------------------------------------------|
+| data     | all.fasta           | l'ensemble des séquences fasta combinées en un fichier.      |
+|          |                     | facilite l'analyse python                                    |
+| scripts  | ab1_parser.py       | convertit les fichiers .ab1 en fichier fastq. d'un seul coup |
+| scripts  | ab1_to_fastq        | convertit le fichier ab1 du stdin en fastq du stdout         |
+| scripts  | extract_raw_data.sh | extrait l'ensemble des données des fichiers .zip             |
+| analysis | vincent_plot.pdf    | le graphe de vincent du [2015-11-02 Mon]                     |
+#+TBLFM: 
 * data
 ** raw_seq_nvbr
 Contient les deux dataset au format .zip. DO NOT TOUCH.
@@ -56,6 +72,12 @@ Pour extraire les données du fichier brut .zip à la structure de données.
   # déplace le contenu du dossier inutile dans le présent dossier
   mv 1369628/* ./
   rm -r 1369628 # supprime le dossier
+
+  ##
+  ## combine tout les fasta en 1
+  ##
+  touch ../data/all.fasta
+  cat ../data/fasta/*.fas > ../data/all.fasta
 #+END_SRC
 
 * analysis 
@@ -83,13 +105,13 @@ d'~analysis~.
 #+END_SRC
 
 ** ab1 python parser
-
+*** d'un seul coup
 C'est un script python qui convertit les fichiers .ab1 du dossier
 [[./data/spectrograms/]]  en fichier .fastq, dans le dossier [[./data/fastq/]].  
-Trois choses :
-- lire le fichier en entrée
-- transformer en fastq
-- écrire sur le disque. 
+
+1. lit les fichiers du dossier contenant .ab1
+2. les transforme en fastq
+3. les écrit sur le disque dans le dosssier fastq.
 
 #+BEGIN_SRC python :tangle ./scripts/ab1_parser.py
   #!/usr/bin/env python
@@ -108,6 +130,7 @@ Trois choses :
           SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
 #+END_SRC
 
+*** from stdin
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
   """
@@ -116,6 +139,11 @@ Trois choses :
   ============
 
   Un module pour convertir le fichier .ab1 en fichier fastq.
+  À noter que le stdin en question doit être une liste de nom de fichiers
+  ab1. 
+
+  Example:
+  ls | grep ab1 | ab1_to_fastq
   """
 
   from __future__ import print_function
