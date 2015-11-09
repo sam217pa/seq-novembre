@@ -44,6 +44,7 @@ tree ./ -L 2
 |----------+---------------------+--------------------------------------------------------------|
 | data     | all.fasta           | l'ensemble des séquences fasta combinées en un fichier.      |
 |          |                     | facilite l'analyse python                                    |
+| data     | refseq.fasta        | contient la séquence WT du gène d'intérêt                    |
 | scripts  | ab1_parser.py       | convertit les fichiers .ab1 en fichier fastq. d'un seul coup |
 | scripts  | ab1_to_fastq        | convertit le fichier ab1 du stdin en fastq du stdout         |
 | scripts  | extract_raw_data.sh | extrait l'ensemble des données des fichiers .zip             |
@@ -157,12 +158,12 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
       # check if it ends with .ab1
       if file_name.endswith(".ab1"):
           print("parsing sequences from " + file_name)
-        
+      
           ab1_in = "../data/spectrograms/" + file_name
           fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
           fasta_out = "../data/fasta/" + file_name[0:-4] + ".fst"
           # convert the file
-          SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
+          SeqIO.convert(ab1_in, "abi", fastq_out, "fastq-illumina")
           SeqIO.convert(ab1_in, "abi", fasta_out, "fasta")
 #+END_SRC
 

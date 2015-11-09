@@ -3,3 +3,5 @@
 data/
 /.Rhistory
 /README[*Org Src README[ python ]*]
+tmp/
+data/tmp/

@@ -19,6 +19,8 @@ rm -r 1369628 # supprime le dossier
 ## supprime fichiers mauvaise qualité
 ##
 # absence de données dans pS6-1073.fas
+# on repart des données de .ab1
+rm ./fasta/*.fas
 
 ##
 ## combine tout les fasta en 1
@@ -32,4 +34,4 @@ else
     touch all.fasta
 fi
 
-cat ../data/fasta/*.fas >> ../data/all.fasta
+cat ../data/fasta/*.fst >> ../data/all.fasta
