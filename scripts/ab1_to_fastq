@@ -5,12 +5,16 @@ ab1_to_fastq
 ============
 
 Un module pour convertir le fichier .ab1 en fichier fastq.
+À noter que le stdin en question doit être une liste de nom de fichiers
+ab1. 
+
+Example:
+ls | grep ab1 | ab1_to_fastq
 """
 
 from __future__ import print_function
 import sys
 from Bio import SeqIO
-
 
 for line in sys.stdin:
     assert line.rstrip().endswith(".ab1"), "not an ab1 file"

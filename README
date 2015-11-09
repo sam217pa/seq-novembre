@@ -5,7 +5,7 @@
 #+end_src
 
 Le dossier contient les données du séquençage des deux plaques envoyées à la
-suite des manips de Anne-Laure. 
+suite des manips d'Anne-Laure. 
 
 * structure
 #+BEGIN_SRC sh :results verbatim 
@@ -48,7 +48,6 @@ tree ./ -L 2
 | scripts  | ab1_to_fastq        | convertit le fichier ab1 du stdin en fastq du stdout         |
 | scripts  | extract_raw_data.sh | extrait l'ensemble des données des fichiers .zip             |
 | analysis | vincent_plot.pdf    | le graphe de vincent du [2015-11-02 Mon]                     |
-#+TBLFM: 
 * data
 ** raw_seq_nvbr
 Contient les deux dataset au format .zip. DO NOT TOUCH.
@@ -74,14 +73,48 @@ Pour extraire les données du fichier brut .zip à la structure de données.
   rm -r 1369628 # supprime le dossier
 
   ##
+  ## supprime fichiers mauvaise qualité
+  ##
+  # absence de données dans pS6-1073.fas
+  # on repart des données de .ab1
+  rm ./fasta/*.fas
+
+  ##
   ## combine tout les fasta en 1
   ##
-  touch ../data/all.fasta
-  cat ../data/fasta/*.fas > ../data/all.fasta
+  if [ -f all.fasta ]
+  then
+      rm all.fasta
+      echo "Cleaning old files"
+      touch all.fasta
+  else
+      touch all.fasta
+  fi
+
+  cat ../data/fasta/*.fst >> ../data/all.fasta
 #+END_SRC
 
 * analysis 
 Contient les résultats des analyses. Graphes ou données transformées. 
+
+** Commentaires
+
+*** [2015-11-09 Mon]
+Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
+fichier [[./data/spectrograms/pS6-1073.ab1]] en contient. On repart des .ab1 avec un
+script [[./scripts/ab1_parser.py]], qui convertit les .ab1 en fasta et fastq. 
+
+Le fichier [[./data/fasta/pS6-1073.fst]] est toujours aussi mauvais. Erreurs de
+séquençage ? À exclure des analyses. 
+
+Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
+position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
+erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
+exclure des analyses.
+
+Le fichier 
+
+
 * scripts 
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
@@ -90,7 +123,6 @@ d'~analysis~.
 #+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
   library(dplyr)
   library(ggplot2)
-  library(readr)
 
   read_result <- function(filename){
     readr::read_delim(filename, delim = ";")
@@ -102,10 +134,12 @@ d'~analysis~.
   indel_weak <- read_result("./data/1369607.INDEL.csv")
   snp_weak$mutant <- "weak"
   snp_strong$mutant <- "strong"
+
 #+END_SRC
 
 ** ab1 python parser
-*** d'un seul coup
+*** ab1 -> (fastq , fasta)
+**** d'un seul coup
 C'est un script python qui convertit les fichiers .ab1 du dossier
 [[./data/spectrograms/]]  en fichier .fastq, dans le dossier [[./data/fastq/]].  
 
@@ -123,14 +157,16 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
       # check if it ends with .ab1
       if file_name.endswith(".ab1"):
           print("parsing sequences from " + file_name)
-          
+        
           ab1_in = "../data/spectrograms/" + file_name
           fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
+          fasta_out = "../data/fasta/" + file_name[0:-4] + ".fst"
           # convert the file
           SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
+          SeqIO.convert(ab1_in, "abi", fasta_out, "fasta")
 #+END_SRC
 
-*** from stdin
+**** from stdin
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
   """
@@ -149,7 +185,6 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
   from __future__ import print_function
   import sys
   from Bio import SeqIO
-
 
   for line in sys.stdin:
       assert line.rstrip().endswith(".ab1"), "not an ab1 file"

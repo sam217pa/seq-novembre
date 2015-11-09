@@ -1,6 +1,5 @@
 library(dplyr)
 library(ggplot2)
-library(readr)
 
 read_result <- function(filename){
   readr::read_delim(filename, delim = ";")
