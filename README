@@ -61,7 +61,7 @@ Pour extraire les données du fichier brut .zip à la structure de données.
   # Le script qui extrait les données depuis les fichiers zip bruts et qui met en
   # place la structure de fichier.
 
-  cd ./data # cd ../data quand dans dossier `scripts'
+  cd ./data # à modifier en cd ../data quand dans dossier `scripts'
   # extraction des données brutes
   unzip raw_seq_nvbr/1369607.zip
   unzip raw_seq_nvbr/1369628.zip
@@ -113,7 +113,14 @@ position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est
 erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
 exclure des analyses.
 
-Le fichier 
+*** [2015-11-16 Mon]
+La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
+spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
+utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
+[[./analysis/all_fastqc.html]]. Il a été convenu arbitrairement avec Vincent que les bases d'une
+qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
+[[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
+versions via /git/ éventuellement.
 
 
 * scripts 
@@ -146,7 +153,11 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
 
 1. lit les fichiers du dossier contenant .ab1
 2. les transforme en fastq
-3. les écrit sur le disque dans le dosssier fastq.
+3. vérifie si la qualité des données est suffisante.
+   - si oui, continue
+   - si non, ne pas les écrire.
+4. trimme les premières et dernières bases de mauvaises qualité. 
+5. écriture sur le disque dans le dosssier fastq.
 
 #+BEGIN_SRC python :tangle ./scripts/ab1_parser.py
   #!/usr/bin/env python

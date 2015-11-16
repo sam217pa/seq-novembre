@@ -5,3 +5,4 @@ data/
 /README[*Org Src README[ python ]*]
 tmp/
 data/tmp/
+/scripts/.Rhistory
