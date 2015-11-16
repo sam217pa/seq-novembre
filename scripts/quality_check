@@ -1,0 +1,14 @@
+#!/usr/local/bin/bash
+# quand dans le dossier ./scripts
+cd ../data/
+
+if [ -d tmp ]; then # si le dossier tmp existe
+    rm tmp/all.fastq
+    cat fastq/*.fastq > all.fastq
+else
+    mkdir tmp
+    cat fastq/*.fastq > all.fastq
+fi
+
+fastqc tmp/all.fastq # analyse les données
+mv tmp/all_fastqc.html ../analysis/ # déplace dans le dossier résultat.

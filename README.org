@@ -1,11 +1,19 @@
 # -*- mode: org; -*-
 
 #+begin_src emacs-lisp :results none :export none
-  (org-babel-tangle-file "README")
+  (org-babel-tangle-file "README.org")
 #+end_src
 
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
+
+* Tâches [0/5]
+** TODO écrire le script python qui filtre les données sur la qualité
+** TODO comparer fastqc output
+** TODO refaire le SNP calling
+** TODO analyser les données de SNP
+** TODO préparer résultats vendredi
+DEADLINE: <2015-11-20 Fri 10:00>
 
 * structure
 #+BEGIN_SRC sh :results verbatim 
@@ -13,7 +21,7 @@ tree ./ -L 2
 #+END_SRC
 
 #+RESULTS:
-#+begin_example
+#+BEGIN_EXAMPLE
 ./
 ├── README
 ├── README[*Org\ Src\ README[\ python\ ]*]
@@ -38,7 +46,7 @@ tree ./ -L 2
     └── extract_raw_data.sh
 
 8 directories, 13 files
-#+end_example
+#+END_EXAMPLE
 
 | dir      | file                | description                                                  |
 |----------+---------------------+--------------------------------------------------------------|
@@ -94,40 +102,13 @@ Pour extraire les données du fichier brut .zip à la structure de données.
 
   cat ../data/fasta/*.fst >> ../data/all.fasta
 #+END_SRC
-
 * analysis 
 Contient les résultats des analyses. Graphes ou données transformées. 
-
-** Commentaires
-
-*** [2015-11-09 Mon]
-Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
-fichier [[./data/spectrograms/pS6-1073.ab1]] en contient. On repart des .ab1 avec un
-script [[./scripts/ab1_parser.py]], qui convertit les .ab1 en fasta et fastq. 
-
-Le fichier [[./data/fasta/pS6-1073.fst]] est toujours aussi mauvais. Erreurs de
-séquençage ? À exclure des analyses. 
-
-Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
-position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
-erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
-exclure des analyses.
-
-*** [2015-11-16 Mon]
-La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
-spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
-utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
-[[./analysis/all_fastqc.html]]. Il a été convenu arbitrairement avec Vincent que les bases d'une
-qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
-[[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
-versions via /git/ éventuellement.
-
-
 * scripts 
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
-** .csv analyses
+** Analyses des csv 
 #+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
   library(dplyr)
   library(ggplot2)
@@ -144,7 +125,6 @@ d'~analysis~.
   snp_strong$mutant <- "strong"
 
 #+END_SRC
-
 ** ab1 python parser
 *** ab1 -> (fastq , fasta)
 **** d'un seul coup
@@ -169,13 +149,14 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
       # check if it ends with .ab1
       if file_name.endswith(".ab1"):
           print("parsing sequences from " + file_name)
-      
+    
           ab1_in = "../data/spectrograms/" + file_name
           fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
           fasta_out = "../data/fasta/" + file_name[0:-4] + ".fst"
           # convert the file
           SeqIO.convert(ab1_in, "abi", fastq_out, "fastq-illumina")
           SeqIO.convert(ab1_in, "abi", fasta_out, "fasta")
+
 #+END_SRC
 
 **** from stdin
@@ -205,4 +186,46 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
           print(ab1_record.format("fastq"))
 
 #+END_SRC
+** analyses fastqc
+Le script utilisé pour analyser les données de qualité via /fastqc/. 
+
+#+BEGIN_SRC sh :tangle scripts/quality_check
+  #!/usr/local/bin/bash
+  # quand dans le dossier ./scripts
+  cd ../data/
+
+  if [ -d tmp ]; then # si le dossier tmp existe
+      rm tmp/all.fastq
+      cat fastq/*.fastq > all.fastq
+  else
+      mkdir tmp
+      cat fastq/*.fastq > all.fastq
+  fi
+
+  fastqc tmp/all.fastq # analyse les données
+  mv tmp/all_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
+#+END_SRC 
+
+* Commentaires
+** [2015-11-09 Mon]
+Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
+fichier [[./data/spectrograms/pS6-1073.ab1]] en contient. On repart des .ab1 avec un
+script [[./scripts/ab1_parser.py]], qui convertit les .ab1 en fasta et fastq. 
+
+Le fichier [[./data/fasta/pS6-1073.fst]] est toujours aussi mauvais. Erreurs de
+séquençage ? À exclure des analyses. 
+
+Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
+position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
+erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
+exclure des analyses.
+
+** [2015-11-16 Mon]
+La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
+spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
+utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
+[[./analysis/all_fastqc.html]]. Il a été convenu arbitrairement avec Vincent que les bases d'une
+qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
+[[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
+versions via /git/ éventuellement.
 
