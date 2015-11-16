@@ -8,12 +8,11 @@ Le dossier contient les données du séquençage des deux plaques envoyées à l
 suite des manips d'Anne-Laure. 
 
 * Tâches [0/5]
-** TODO écrire le script python qui filtre les données sur la qualité
-** TODO comparer fastqc output
-** TODO refaire le SNP calling
-** TODO analyser les données de SNP
-** TODO préparer résultats vendredi
-DEADLINE: <2015-11-20 Fri 10:00>
+- [ ] écrire le script python qui filtre les données sur la qualité
+- [ ] comparer fastqc output
+- [ ] refaire le SNP calling
+- [ ] analyser les données de SNP
+- [ ] préparer résultats vendredi <2015-11-20 Fri 10:00> 
 
 * structure
 #+BEGIN_SRC sh :results verbatim 
@@ -149,16 +148,42 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
       # check if it ends with .ab1
       if file_name.endswith(".ab1"):
           print("parsing sequences from " + file_name)
-    
+
           ab1_in = "../data/spectrograms/" + file_name
           fastq_out = "../data/fastq/" + file_name[0:-4] + ".fastq"
           fasta_out = "../data/fasta/" + file_name[0:-4] + ".fst"
           # convert the file
-          SeqIO.convert(ab1_in, "abi", fastq_out, "fastq-illumina")
+          SeqIO.convert(ab1_in, "abi", fastq_out, "fastq")
           SeqIO.convert(ab1_in, "abi", fasta_out, "fasta")
 
 #+END_SRC
 
+#+BEGIN_SRC python :tangle ./scripts/trim_low_quality.py
+  #!/usr/bin/env python
+  import os
+  from Bio import SeqIO
+  import numpy as np
+
+  untrimmed_fastq = SeqIO.parse(open("untrimmed.fastq", "rU"), "fastq")
+
+  quality_min  = []
+  quality_mean = []
+  quality_max  = []
+
+  for record in untrimmed_fastq:
+      # print("analysing seq with id : %s " % rec.id )
+      # replace base with `N` if quality < X
+      quality = 80
+      rec = record[30:-30]
+      # for phred in rec.letter_annotations["phred_quality"]:
+      #     if phred < quality:
+      #         print phred
+          # print base.letter_annotation["phred_quality"]
+      quality_min.append(     min(rec.letter_annotations["phred_quality"]))
+      quality_max.append(     max(rec.letter_annotations["phred_quality"]))
+      quality_mean.append(np.mean(rec.letter_annotations["phred_quality"]))
+
+#+END_SRC
 **** from stdin
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
@@ -195,15 +220,15 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   cd ../data/
 
   if [ -d tmp ]; then # si le dossier tmp existe
-      rm tmp/all.fastq
-      cat fastq/*.fastq > all.fastq
+      rm tmp/untrimmed.fastq
+      cat fastq/*.fastq > untrimmed.fastq
   else
       mkdir tmp
-      cat fastq/*.fastq > all.fastq
+      cat fastq/*.fastq > untrimmed.fastq
   fi
 
-  fastqc tmp/all.fastq # analyse les données
-  mv tmp/all_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
+  fastqc tmp/untrimmed.fastq # analyse les données
+  mv tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
 #+END_SRC 
 
 * Commentaires
@@ -228,4 +253,8 @@ utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
 qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
 [[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
 versions via /git/ éventuellement.
+
+J'écris également aujourd'hui le script [[./scripts/trim_low_quality.py]], qui
+enlève les 30 premières et dernières séquences, et qui empêche les séquences de
+trop mauvaise qualité d'être utilisées dans l'analyse. 
 

@@ -3,12 +3,12 @@
 cd ../data/
 
 if [ -d tmp ]; then # si le dossier tmp existe
-    rm tmp/all.fastq
-    cat fastq/*.fastq > all.fastq
+    rm tmp/untrimmed.fastq
+    cat fastq/*.fastq > untrimmed.fastq
 else
     mkdir tmp
-    cat fastq/*.fastq > all.fastq
+    cat fastq/*.fastq > untrimmed.fastq
 fi
 
-fastqc tmp/all.fastq # analyse les données
-mv tmp/all_fastqc.html ../analysis/ # déplace dans le dossier résultat.
+fastqc tmp/untrimmed.fastq # analyse les données
+mv tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
