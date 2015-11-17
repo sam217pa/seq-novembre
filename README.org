@@ -7,9 +7,9 @@
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
 
-* Tâches [0/5]
-- [ ] écrire le script python qui filtre les données sur la qualité
-- [ ] comparer fastqc output
+* Tâches [2/5]
+- [X] écrire le script qui filtre les données sur la qualité
+- [X] comparer fastqc output
 - [ ] refaire le SNP calling
 - [ ] analyser les données de SNP
 - [ ] préparer résultats vendredi <2015-11-20 Fri 10:00> 
@@ -196,7 +196,7 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
   # -trimq=28 : trim if quality < 28 (sanger encoding, illumina 1.9)
   # -minlen=620 : keep only seq with length > 620, after trimming.
 
-  if [[ ! -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]; then # seulement si les fichiers n'existent pas. 
+  if [[ -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]; then # seulement si les fichiers n'existent pas. 
       ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
   else
       rm ../data/trimmed.fastq
@@ -205,6 +205,8 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
       ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
   fi
 
+  fastqc trimmed.fastq -o ./tmp
+  mv ./tmp/trimmed_fastqc.html ../analysis
 #+END_SRC
 
 ** analyses fastqc
@@ -222,8 +224,8 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
       cat fastq/*.fastq > untrimmed.fastq
   fi
 
-  fastqc untrimmed.fastq # analyse les données
-  mv untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
+  fastqc untrimmed.fastq -o ./tmp # analyse les données et output dans tmp
+  mv ./tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
 #+END_SRC 
 
 * Commentaires
@@ -255,10 +257,13 @@ trop mauvaise qualité d'être utilisées dans l'analyse.
 Finalement, inutile de réinventer la roue. =Fastx_toolkit= devrait normalement
 faire ça très bien, mais ça ne fonctionne pas, pour des raisons que je ne
 m'explique pas. Cependant, je suis tombé sur l'utilitaire =BBmap=, qui contient
-entre autre, =bbduk=. [[~/.bin/bbmap/bbduk.sh][Voir le fichier source ici]], et pour des commentaires sur
-l'utilisation [[http://seqanswers.com/forums/showthread.php?t=58221][Voir là]], et [[http://seqanswers.com/forums/showthread.php?t=42776][là]]. 
+entre autre, =bbduk=. [[~/.bin/bbmap/bbduk.sh][Voir le fichier source ici]], la page de téléchargement [[http://sourceforge.net/projects/bbmap/?source=typ_redirect][là]],
+et pour des commentaires sur l'utilisation [[http://seqanswers.com/forums/showthread.php?t=58221][Voir là]], et [[http://seqanswers.com/forums/showthread.php?t=42776][là]].
 
 ** [2015-11-17 Tue]
 Je supprime donc le script =low_quality_trim.py=. J'utilise le script
 =low_quality_trim.sh=. 
 
+En résultat, comparer [[./analysis/trimmed_fastqc.html]] et
+[[./analysis/untrimmed_fastqc.html]]. On n'a plus que 179 séquences au lieu de 192,
+mais ça vaut le coup, la qualité est largement supérieure. 

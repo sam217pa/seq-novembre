@@ -9,5 +9,5 @@ else
     cat fastq/*.fastq > untrimmed.fastq
 fi
 
-fastqc untrimmed.fastq # analyse les données
-mv untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
+fastqc untrimmed.fastq -o ./tmp # analyse les données et output dans tmp
+mv ./tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
