@@ -2,13 +2,12 @@
 # quand dans le dossier ./scripts
 cd ../data/
 
-if [ -d tmp ]; then # si le dossier tmp existe
-    rm tmp/untrimmed.fastq
+if [ -f untrimmed.fastq ]; then # si le dossier tmp existe
+    rm untrimmed.fastq
     cat fastq/*.fastq > untrimmed.fastq
 else
-    mkdir tmp
     cat fastq/*.fastq > untrimmed.fastq
 fi
 
-fastqc tmp/untrimmed.fastq # analyse les données
-mv tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
+fastqc untrimmed.fastq # analyse les données
+mv untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.

@@ -158,32 +158,6 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
 
 #+END_SRC
 
-#+BEGIN_SRC python :tangle ./scripts/trim_low_quality.py
-  #!/usr/bin/env python
-  import os
-  from Bio import SeqIO
-  import numpy as np
-
-  untrimmed_fastq = SeqIO.parse(open("untrimmed.fastq", "rU"), "fastq")
-
-  quality_min  = []
-  quality_mean = []
-  quality_max  = []
-
-  for record in untrimmed_fastq:
-      # print("analysing seq with id : %s " % rec.id )
-      # replace base with `N` if quality < X
-      quality = 80
-      rec = record[30:-30]
-      # for phred in rec.letter_annotations["phred_quality"]:
-      #     if phred < quality:
-      #         print phred
-          # print base.letter_annotation["phred_quality"]
-      quality_min.append(     min(rec.letter_annotations["phred_quality"]))
-      quality_max.append(     max(rec.letter_annotations["phred_quality"]))
-      quality_mean.append(np.mean(rec.letter_annotations["phred_quality"]))
-
-#+END_SRC
 **** from stdin
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
@@ -211,6 +185,49 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
           print(ab1_record.format("fastq"))
 
 #+END_SRC
+
+** untrimmed.fastq -> trimmed.fastq
+Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./data/trimmed.fastq]]
+
+
+#+BEGIN_SRC python :tangle ./scripts/trim_low_quality.py
+  #!/usr/bin/env python
+  import os
+  from Bio import SeqIO
+  import numpy as np
+
+  untrimmed_fastq = SeqIO.parse(open("../data/untrimmed.fastq", "rU"), "fastq")
+
+  # trim low quality sequence ends,
+  # keep only sequence where mean phred score is > 50
+  good_reads = (rec[30:-40] for rec in untrimmed_fastq \
+                if np.mean(rec.letter_annotations["phred_quality"]) > 50 )
+
+  # output to disk
+  SeqIO.write(good_reads, "../data/trimmed.fastq", "fastq")
+
+  # run fastqc, with output to dir analysis
+  os.system("fastqc -o ../analysis ../data/trimmed.fastq")
+  os.system("fastqc -o ../analysis ../data/untrimmed.fastq")
+#+END_SRC
+
+#+BEGIN_SRC sh :tangle ./scripts/trim_low_quality.sh
+  #!/usr/local/bin/bash
+
+  # -qtrim=rl : quality trim right and left 
+  # -trimq=28 : trim if quality < 28 (sanger encoding, illumina 1.9)
+  # -minlen=620 : keep only seq with length > 620, after trimming.
+
+  if [[ ! -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]; then # seulement si les fichiers n'existent pas. 
+      ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
+  else
+      rm ../data/trimmed.fastq
+      rm ../data/untrimmed.fastq
+      ./quality_check # assemble tous les fichiers .fastq de novo
+      ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
+  fi
+
+#+END_SRC
 ** analyses fastqc
 Le script utilisé pour analyser les données de qualité via /fastqc/. 
 
@@ -219,16 +236,15 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   # quand dans le dossier ./scripts
   cd ../data/
 
-  if [ -d tmp ]; then # si le dossier tmp existe
-      rm tmp/untrimmed.fastq
+  if [ -f untrimmed.fastq ]; then # si le dossier tmp existe
+      rm untrimmed.fastq
       cat fastq/*.fastq > untrimmed.fastq
   else
-      mkdir tmp
       cat fastq/*.fastq > untrimmed.fastq
   fi
 
-  fastqc tmp/untrimmed.fastq # analyse les données
-  mv tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
+  fastqc untrimmed.fastq # analyse les données
+  mv untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat. 
 #+END_SRC 
 
 * Commentaires
@@ -244,7 +260,6 @@ Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
 position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
 erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
 exclure des analyses.
-
 ** [2015-11-16 Mon]
 La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
 spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
@@ -257,4 +272,14 @@ versions via /git/ éventuellement.
 J'écris également aujourd'hui le script [[./scripts/trim_low_quality.py]], qui
 enlève les 30 premières et dernières séquences, et qui empêche les séquences de
 trop mauvaise qualité d'être utilisées dans l'analyse. 
+
+Finalement, inutile de réinventer la roue. =Fastx_toolkit= devrait normalement
+faire ça très bien, mais ça ne fonctionne pas, pour des raisons que je ne
+m'explique pas. Cependant, je suis tombé sur l'utilitaire =BBmap=, qui contient
+entre autre, =bbduk=. [[~/.bin/bbmap/bbduk.sh][Voir le fichier source ici]], et pour des commentaires sur
+l'utilisation [[http://seqanswers.com/forums/showthread.php?t=58221][Voir là]], et [[http://seqanswers.com/forums/showthread.php?t=42776][là]]. 
+
+** [2015-11-17 Tue]
+Je supprime donc le script =low_quality_trim.py=. J'utilise le script
+=low_quality_trim.sh=. 
 

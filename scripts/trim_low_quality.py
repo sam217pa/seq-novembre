@@ -3,21 +3,16 @@ import os
 from Bio import SeqIO
 import numpy as np
 
-untrimmed_fastq = SeqIO.parse(open("untrimmed.fastq", "rU"), "fastq")
+untrimmed_fastq = SeqIO.parse(open("../data/untrimmed.fastq", "rU"), "fastq")
 
-quality_min  = []
-quality_mean = []
-quality_max  = []
+# trim low quality sequence ends,
+# keep only sequence where mean phred score is > 50
+good_reads = (rec[30:-40] for rec in untrimmed_fastq \
+              if np.mean(rec.letter_annotations["phred_quality"]) > 50 )
 
-for record in untrimmed_fastq:
-    # print("analysing seq with id : %s " % rec.id )
-    # replace base with `N` if quality < X
-    quality = 80
-    rec = record[30:-30]
-    # for phred in rec.letter_annotations["phred_quality"]:
-    #     if phred < quality:
-    #         print phred
-        # print base.letter_annotation["phred_quality"]
-    quality_min.append(     min(rec.letter_annotations["phred_quality"]))
-    quality_max.append(     max(rec.letter_annotations["phred_quality"]))
-    quality_mean.append(np.mean(rec.letter_annotations["phred_quality"]))
+# output to disk
+SeqIO.write(good_reads, "../data/trimmed.fastq", "fastq")
+
+# run fastqc, with output to dir analysis
+os.system("fastqc -o ../analysis ../data/trimmed.fastq")
+os.system("fastqc -o ../analysis ../data/untrimmed.fastq")
