@@ -9,3 +9,6 @@ data/tmp/
 *.zip
 /analysis/plots/counts_by_af.indels.dat
 /analysis/plots/counts_by_af.snps.dat
+/analysis/plots/depth.0.dat
+/analysis/plots/depth.0.pdf
+/analysis/plots/depth.0.png

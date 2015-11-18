@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(extrafont)
 library(ggthemes)
+library(cowplot)
 
 ## read the data
 snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
@@ -75,9 +76,7 @@ snp_data$mutation_type = factor(snp_data$mutation_type)
 ## facétée par type de mutant, couleur = type de mutation
 mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
     geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
-    facet_grid(~mutant, labeller = label_both) 
-
-mutation_plot +
+    facet_grid(~mutant, labeller = label_both) +
     theme_minimal(base_family = "Courier") +
     ## scale_y_tufte() +
     scale_x_continuous(breaks = seq(1, 734, 60)) +
@@ -92,8 +91,7 @@ mutation_plot +
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          panel.grid.major.y = element_line(colour = "white", size = 1)) ->
-    mutation_plot
+          panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
 ## distribution des SNP
 ## facetée par type de mutation, couleur : type de mutant. 
@@ -138,6 +136,8 @@ save_to_a5(output_file = "../../analysis/substitution_distribution.pdf",
            plot = mutation_plot)
 save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
            plot = snp_plot)
+save_to_a5(output_file = "../../analysis/muttype_plot.pdf",
+           plot = muttype_plot)
 
 multi_plot <- plot_grid(snp_plot, mutation_plot, NULL, muttype_plot, ncol = 2, labels = c("A", "B", " ", "C"))
 

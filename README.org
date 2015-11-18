@@ -81,7 +81,8 @@ tree ./ -L 2
 |          | -- untrimmed_fastqc.html                | le contrôle de la qualité des séquences non-trimmées via fastqc             |
 |          | -- vincent_plot.pdf                     | le graphe de vincent le jour de la réception des données.                   |
 |----------+-----------------------------------------+-----------------------------------------------------------------------------|
-| data     | -- 1369607.INDEL.csv                    | le fichier envoyé par GATK                                                  |
+| data     |                                         |                                                                             |
+|          | -- 1369607.INDEL.csv                    | le fichier envoyé par GATK                                                  |
 |          | -- 1369607.SNP.csv                      | le fichier envoyé par GATK                                                  |
 |          | -- 1369628.INDEL.csv                    | le fichier envoyé par GATK                                                  |
 |          | -- 1369628.SNP.csv                      | le fichier envoyé par GATK                                                  |
@@ -113,7 +114,6 @@ tree ./ -L 2
 |          | -- variantCallerBwa.sh                  | un premier essai d'alignement et de snp calling via samtools et bcftools    |
 |          | -- variantCallerSsaha2.sh               | l'alignement avec ssaha2SNP                                                 |
 |          | -- variant_analysis.R                   | l'analyse des variants et les graphes qui vont avec                         |
-
 
 * Commentaires
 ** [2015-11-09 Mon]
@@ -477,6 +477,16 @@ On crée la table en question avec :
   library(ggplot2)
   library(extrafont)
   library(ggthemes)
+  library(cowplot)
+
+  ##
+
+  mytheme <- theme(panel.ontop = TRUE,
+                   axis.text = element_text(size = 8, colour = "gray"),
+                   panel.grid.major.x = element_blank(),
+                   panel.grid.minor.x = element_blank(),
+                   panel.grid.minor.y = element_blank(),
+                   panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
   ## read the data
   snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
@@ -548,9 +558,7 @@ On crée la table en question avec :
   ## facétée par type de mutant, couleur = type de mutation
   mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
       geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
-      facet_grid(~mutant, labeller = label_both) 
-
-  mutation_plot +
+      facet_grid(~mutant, labeller = label_both) +
       theme_minimal(base_family = "Courier") +
       ## scale_y_tufte() +
       scale_x_continuous(breaks = seq(1, 734, 60)) +
@@ -565,8 +573,7 @@ On crée la table en question avec :
             panel.grid.major.x = element_blank(),
             panel.grid.minor.x = element_blank(),
             panel.grid.minor.y = element_blank(),
-            panel.grid.major.y = element_line(colour = "white", size = 1)) ->
-      mutation_plot
+            panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
   ## distribution des SNP
   ## facetée par type de mutation, couleur : type de mutant. 
@@ -601,7 +608,7 @@ On crée la table en question avec :
 
   save_to_a3 <- function(output_file, plot)
   {
-      # a3 dimensions : 11.69in x 16.53in
+                                          # a3 dimensions : 11.69in x 16.53in
       pdf(file = output_file, height = 11.69, width = 16.53)
       print(plot)
       dev.off()
@@ -611,6 +618,8 @@ On crée la table en question avec :
              plot = mutation_plot)
   save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
              plot = snp_plot)
+  save_to_a5(output_file = "../../analysis/muttype_plot.pdf",
+             plot = muttype_plot)
 
   multi_plot <- plot_grid(snp_plot, mutation_plot, NULL, muttype_plot, ncol = 2, labels = c("A", "B", " ", "C"))
 
@@ -619,6 +628,81 @@ On crée la table en question avec :
   dev.off()
 
   ##==============================================================================
-  ## STATISTICAL ANALYSIS
+  ## SWITCH INITIAL
   ##==============================================================================
+  snp_data %>%
+      group_by(name, mutation_type) %>%
+      summarise(switch_pos = min(offset_on_subject)) ->
+      switch_data_muttype
+
+  ## la position de switch sans tenir compte de la qualité des mutants
+  switch_position_globale <- ggplot(switch_data_muttype, aes(switch_pos)) +
+      geom_histogram(fill = "black", binwidth = 5) +
+      theme_minimal(base_family = "Courier") +
+      xlab("") +
+      ylab("") +
+      annotate("rect", xmin = 160, xmax = 260, ymin = 0, ymax = 10, alpha = 0.4) + 
+      annotate("text", x = 220, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
+      annotate("rect", xmin = 480, xmax = 620, ymin = 0, ymax = 10, alpha = 0.4) + 
+      annotate("text", x = 550, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
+      mytheme
+  switch_position_globale
+  ggsave(switch_position_globale, file = "../../analysis/switch_position_globale.pdf",
+         height = 4, width = 7, units = "cm")
+
+  ## en tenant compte du type de mutation
+  switch_pos_by_muttype <- ggplot(switch_data_muttype, aes(switch_pos)) +
+      geom_histogram(aes(fill = mutation_type),
+                     position = "dodge", 
+                     binwidth = 10) +
+      scale_x_continuous(breaks = seq(1, 734, 30)) +
+      theme_minimal(base_family = "Courier") +
+      scale_fill_discrete() +
+      xlab("Distribution de la qualite de la premiere substitution") +
+      ylab("") +
+      theme(legend.position = c(0.8, 0.7)) +
+      mytheme
+  switch_pos_by_muttype
+  ## en tenant compte du type de mutant
+  snp_data %>%
+      group_by(name, mutant) %>%
+      summarise(switch_pos = min(offset_on_subject)) ->
+      switch_data_mutant
+  switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
+      geom_histogram(aes(fill = mutant),
+                     position = "dodge", 
+                     binwidth = 10) +
+      ## facet_grid(.~mutant) +
+      scale_x_continuous(breaks = seq(1, 734, 30)) +
+      theme_minimal(base_family = "Courier") +
+      scale_fill_discrete() +
+      xlab("Distribution de la position de switch en fonction du type de mutant") +
+      ylab("") +
+      theme(legend.position = c(0.8, 0.5)) +
+      mytheme
+  switch_pos_by_mutant
+  multi_switch_plot <- plot_grid(switch_pos_by_muttype, switch_pos_by_mutant, ncol = 1, labels = c("A", "B"))
+  ggsave(multi_switch_plot, file = "../../analysis/switch_pos_by_mutant.pdf",
+         height = 21, width = 29.7, units = "cm")
+
+  ##==============================================================================
+  ## SWITCH TERMINAL
+  ##==============================================================================
+  snp_data %>%
+      group_by(name, mutant) %>%
+      summarise(switch_pos = max(offset_on_subject)) ->
+      end_data_mutant
+
+  pdf(file = "../../analysis/end_switch.pdf")
+  print(
+      ggplot(end_data_mutant, aes(switch_pos)) +
+      geom_histogram(aes(fill = mutant),
+                     position = "dodge",
+                     binwidth = 1) +
+      theme_minimal() +
+      xlab("") + ylab("") +
+      theme(legend.position = c(0.4, 0.5)) +
+      mytheme
+  )
+  dev.off()
 #+END_SRC
