@@ -7,10 +7,12 @@
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
 
-* Tâches [2/5]
+* Tâches [3/7]
 - [X] écrire le script qui filtre les données sur la qualité
 - [X] comparer fastqc output
-- [ ] refaire le SNP calling
+- [X] refaire le SNP calling
+- [ ] réécrire les étapes pour arriver au SNP calling
+- [ ] faire un SQL join dans R pour matcher query name et seq id.
 - [ ] analyser les données de SNP
 - [ ] préparer résultats vendredi <2015-11-20 Fri 10:00> 
 
@@ -107,7 +109,7 @@ Contient les résultats des analyses. Graphes ou données transformées.
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
-** Analyses des csv 
+** Analyses préliminaires des csv 
 #+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
   library(dplyr)
   library(ggplot2)
@@ -124,19 +126,14 @@ d'~analysis~.
   snp_strong$mutant <- "strong"
 
 #+END_SRC
-** ab1 python parser
-*** ab1 -> (fastq , fasta)
-**** d'un seul coup
+** ab1 -> (fastq , fasta)
+*** d'un seul coup
 C'est un script python qui convertit les fichiers .ab1 du dossier
 [[./data/spectrograms/]]  en fichier .fastq, dans le dossier [[./data/fastq/]].  
 
 1. lit les fichiers du dossier contenant .ab1
 2. les transforme en fastq
-3. vérifie si la qualité des données est suffisante.
-   - si oui, continue
-   - si non, ne pas les écrire.
-4. trimme les premières et dernières bases de mauvaises qualité. 
-5. écriture sur le disque dans le dosssier fastq.
+3. écriture sur le disque dans le dosssier fastq.
 
 #+BEGIN_SRC python :tangle ./scripts/ab1_parser.py
   #!/usr/bin/env python
@@ -158,7 +155,7 @@ C'est un script python qui convertit les fichiers .ab1 du dossier
 
 #+END_SRC
 
-**** from stdin
+*** from stdin
 #+BEGIN_SRC python :tangle ./scripts/ab1_to_fastq
   #!/usr/bin/env python
   """
@@ -192,9 +189,10 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
 #+BEGIN_SRC sh :tangle ./scripts/trim_low_quality.sh
   #!/usr/local/bin/bash
 
-  # -qtrim=rl : quality trim right and left 
-  # -trimq=28 : trim if quality < 28 (sanger encoding, illumina 1.9)
-  # -minlen=620 : keep only seq with length > 620, after trimming.
+  #' -qtrim=rl : quality trim right and left 
+  #' -trimq=28 : trim if quality < 28 (sanger encoding, illumina 1.9)
+  #' -minlen=620 : keep only seq with length > 620, after trimming.
+  #' -Xmx1g : tells bbduk to use 1G of RAM
 
   if [[ -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]; then # seulement si les fichiers n'existent pas. 
       ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
@@ -208,8 +206,7 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
   fastqc trimmed.fastq -o ./tmp
   mv ./tmp/trimmed_fastqc.html ../analysis
 #+END_SRC
-
-** analyses fastqc
+** quality check : analyses fastqc
 Le script utilisé pour analyser les données de qualité via /fastqc/. 
 
 #+BEGIN_SRC sh :tangle scripts/quality_check
@@ -228,6 +225,91 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   mv ./tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
 #+END_SRC 
 
+** variant calling
+
+#+name: Prérequis
+#+BEGIN_SRC sh
+  brew tap homebrew/homebrew-science
+  brew update
+  brew install samtools bamtools bcftools bwa
+#+END_SRC
+
+Clairement pas la bonne façon de s'y prendre. 
+#+BEGIN_SRC sh :tangle ./scripts/variantCallerBwa.sh
+  #!/bin/bash
+
+  # le but est de déterminer les SNP
+  # le workflow suivi est celui décrit là http://www.htslib.org/workflow/. 
+
+  ## working dir
+  cd ../data
+  mkdir variantCalling
+
+  ## utilise le reverse complement de la séquence de référence
+  fastx_reverse_complement -i refseq.fasta -o refseq_reverse.fasta
+  cp refseq_reverse.fasta variantCalling/
+  cp trimmed.fastq variantCalling/
+
+  cd variantCalling
+  # renome en utilisant un nom plus simple
+  mv refseq_reverse.fasta reference.fasta
+  ## indexation du fichier référence
+  bwa index reference.fasta
+  # alignement au fichier de reference
+  #' * aln : align
+  #' * mem : algo bwa-mem, more accurate with reads > 100bp. 
+  #' * reference.fasta : reference sequence
+  #' * trimmed.fastq : sequence trimmee.
+  #' * aln_sa.sai : fichier aligné indexé
+  bwa mem reference.fasta trimmed.fastq > align.sam
+
+  ## sort from name order to coordinate order
+  #' * sort : sorting algorithm
+  #' * -O bam : output to bam
+  #' * -o align.bam : name of output
+  #' * -T ./tmp/align_temp : name of temp file
+  #' * align.sam : fichier en entrée
+  mkdir tmp
+  samtools sort -O bam -o align.bam -T ./tmp/align_temp align.sam
+
+  ## conversion au format sam
+  #' * samse : sam singled end
+  #' * reference.fasta : reference sequence
+  #' * aln_sa.sai : alignement indexé
+  # bwa samse reference.fasta aln_sa.sai trimmed.fastq > aln.sam
+
+  ## variant calling
+  #'
+  #'
+  samtools mpileup -ugf reference.fasta align.bam | \
+      bcftools call -vmO z -o study.vcf.gz
+
+  ## indexation du VCF
+  tabix -p vcf study.vcf.gz
+
+  ## graphes et statistiques
+  bcftools stats -F reference.fasta -s - study.vcf.gz > study.vcf.gz.stats
+  mkdir plots
+  plot-vcfstats -p plots/ study.vcf.gz.stats
+  ## déplace dans le dossier analyses
+  cp -r plots ../../analysis/
+#+END_SRC
+
+#+BEGIN_SRC sh :tangle ./scripts/variantCallerSsaha2.sh
+  #!/bin/bash
+
+  # variant calling using ssaha2 and ssaha2SNP
+
+  ## alignement à la séquence de référence
+  #'
+  #'
+  ~/.bin/ssahaSNP/ssaha2 ref.fasta reads.fastq ...
+
+  ## polymorphism detection tool
+  #'
+  #'
+  ~/.bin/ssahaSNP/ssaahaSNP
+#+END_SRC
 * Commentaires
 ** [2015-11-09 Mon]
 Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
@@ -267,3 +349,24 @@ Je supprime donc le script =low_quality_trim.py=. J'utilise le script
 En résultat, comparer [[./analysis/trimmed_fastqc.html]] et
 [[./analysis/untrimmed_fastqc.html]]. On n'a plus que 179 séquences au lieu de 192,
 mais ça vaut le coup, la qualité est largement supérieure. 
+
+Je veux maintenant déterminer les SNPs. Il faut donc que j'aligne les séquences
+obtenues avec la séquence de référence [[./data/refseq.fasta]]. GATC utilise le
+software =SSAHA2= (voir [[http://www.sanger.ac.uk/science/tools/ssaha2-0][là]]) mais à priori il n'est plus utilisable. Le site
+recommande d'utiliser =SMALT=, (voir la page de téléchargement [[http://sourceforge.net/projects/smalt/?source=typ_redirect][là]], le manuel [[ftp://ftp.sanger.ac.uk/pub/resources/software/smalt/smalt-manual-0.7.4.pdf][là]]
+et la page du software [[http://www.sanger.ac.uk/science/tools/smalt-0][là]]. 
+
+En fait, je l'ai juste installé comme ça :
+
+#+BEGIN_SRC sh
+brew update
+brew tap homebrew/homebrew-science
+brew install smalt
+#+END_SRC
+
+Finalement, c'est encore un autre workflow que je veux adopter. On repart sur
+=ssaha2= et =ssaha2SNP=, la page de téléchargement étant [[ftp://ftp.sanger.ac.uk/pub/resources/software/ssaha2/][ici]]. 
+
+** [2015-11-18 Wed]
+Il faut clarifier les étapes permettant d'aligner et de déterminer les SNP. Ce
+qui est fait dans le script [[./scripts/variantCallerSsaha2.sh]]. 

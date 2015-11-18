@@ -7,3 +7,5 @@ tmp/
 data/tmp/
 /scripts/.Rhistory
 *.zip
+/analysis/plots/counts_by_af.indels.dat
+/analysis/plots/counts_by_af.snps.dat
