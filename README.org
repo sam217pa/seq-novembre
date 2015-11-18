@@ -70,15 +70,50 @@ tree ./ -L 2
 11 directories, 32 files
 #+end_src
 
-| dir      | file                | description                                                  |
-|----------+---------------------+--------------------------------------------------------------|
-| data     | all.fasta           | l'ensemble des séquences fasta combinées en un fichier.      |
-|          |                     | facilite l'analyse python                                    |
-| data     | refseq.fasta        | contient la séquence WT du gène d'intérêt                    |
-| scripts  | ab1_parser.py       | convertit les fichiers .ab1 en fichier fastq. d'un seul coup |
-| scripts  | ab1_to_fastq        | convertit le fichier ab1 du stdin en fastq du stdout         |
-| scripts  | extract_raw_data.sh | extrait l'ensemble des données des fichiers .zip             |
-| analysis | vincent_plot.pdf    | le graphe de vincent du [2015-11-02 Mon]                     |
+| dossier  | fichier ou dossier                      | description                                                                 |
+|----------+-----------------------------------------+-----------------------------------------------------------------------------|
+| analysis |                                         |                                                                             |
+|          | -- plots                                | dossier contenant les différents plots générés par plots-bcftools.          |
+|          | -- snp_distribution.pdf                 | la distribution des SNP sans tenir compte de la provenance des mutants      |
+|          | -- snp_resume.pdf                       | les trois plots sur la même feuille                                         |
+|          | -- substitution_distribution.pdf        | la distribution des substitutions.                                          |
+|          | -- trimmed_fastqc.html                  | le contrôle de la qualité des séquences trimmées via fastqc                 |
+|          | -- untrimmed_fastqc.html                | le contrôle de la qualité des séquences non-trimmées via fastqc             |
+|          | -- vincent_plot.pdf                     | le graphe de vincent le jour de la réception des données.                   |
+|----------+-----------------------------------------+-----------------------------------------------------------------------------|
+| data     | -- 1369607.INDEL.csv                    | le fichier envoyé par GATK                                                  |
+|          | -- 1369607.SNP.csv                      | le fichier envoyé par GATK                                                  |
+|          | -- 1369628.INDEL.csv                    | le fichier envoyé par GATK                                                  |
+|          | -- 1369628.SNP.csv                      | le fichier envoyé par GATK                                                  |
+|          | -- Analysis_Summary-Sanger_Pipeline.pdf | description du fichier d'analyse GATK                                       |
+|          | -- all.fasta                            | toutes les séquences                                                        |
+|          | -- fasta                                | dossier contenant les séquences une à une                                   |
+|          | -- fastq                                | idem en fastq                                                               |
+|          | -- id_table.dat                         | une table contenant les nom de séquence, le mutant, et la qualité du mutant |
+|          | -- raw_seq_nvbr                         | le dossier contenant les données brutes                                     |
+|          | -- reference.fasta                      | la séquence de référence                                                    |
+|          | -- refseq.fasta                         | idem                                                                        |
+|          | -- refseq_reverse.fasta                 | la séquence de référence reversed.                                          |
+|          | -- seq                                  | le dossier contentant les séquneces                                         |
+|          | -- spectrograms                         | le dossier contentant les .ab1 files                                        |
+|          | -- tmp                                  | un dossier de travail                                                       |
+|          | -- trimmed.fasta                        | les séquences trimmées                                                      |
+|          | -- trimmed.fastq                        | idem                                                                        |
+|          | -- untrimmed.fastq                      | les séquences non trimmées                                                  |
+|          | -- variantCalling                       | le dossier de travail pour l'analyse des variants                           |
+|----------+-----------------------------------------+-----------------------------------------------------------------------------|
+| scripts  |                                         |                                                                             |
+|          | -- ab1_parser.py                        | convertit l'ensemble des fichiers .ab1 en fastq                             |
+|          | -- ab1_to_fastq                         | idem, utilitaire pipeable                                                   |
+|          | -- exploratory_analysis.R               | premières analyses dans R                                                   |
+|          | -- extract_raw_data.sh                  | met en place la structure de données                                        |
+|          | -- make_id_table.py                     | crée le fichier ../data/id_table.dat                                        |
+|          | -- quality_check                        | analyse la qualité via fastqc                                               |
+|          | -- trim_low_quality.sh                  | trimme les séquences via bbduk                                              |
+|          | -- variantCallerBwa.sh                  | un premier essai d'alignement et de snp calling via samtools et bcftools    |
+|          | -- variantCallerSsaha2.sh               | l'alignement avec ssaha2SNP                                                 |
+|          | -- variant_analysis.R                   | l'analyse des variants et les graphes qui vont avec                         |
+
 
 * Commentaires
 ** [2015-11-09 Mon]
@@ -135,7 +170,8 @@ brew install smalt
 #+END_SRC
 
 Finalement, c'est encore un autre workflow que je veux adopter. On repart sur
-=ssaha2= et =ssaha2SNP=, la page de téléchargement étant [[ftp://ftp.sanger.ac.uk/pub/resources/software/ssaha2/][ici]]. 
+=ssaha2= et =ssaha2SNP=, la page de téléchargement étant
+[[ftp://ftp.sanger.ac.uk/pub/resources/software/ssaha2/]].  
 
 ** [2015-11-18 Wed]
 Il faut clarifier les étapes permettant d'aligner et de déterminer les SNP. Ce
