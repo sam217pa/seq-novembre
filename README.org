@@ -7,13 +7,13 @@
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
 
-* Tâches [4/7]
+* Tâches [6/7]
 - [X] écrire le script qui filtre les données sur la qualité
 - [X] comparer fastqc output
 - [X] refaire le SNP calling
 - [X] réécrire les étapes pour arriver au SNP calling
-- [ ] faire un SQL join dans R pour matcher query name et seq id.
-- [ ] analyser les données de SNP
+- [X] faire un SQL join dans R pour matcher query name et seq id.
+- [X] analyser les données de SNP
 - [ ] préparer résultats vendredi <2015-11-20 Fri 10:00> 
 
 * structure
@@ -21,33 +21,54 @@ suite des manips d'Anne-Laure.
 tree ./ -L 2
 #+END_SRC
 
-#+RESULTS:
-#+BEGIN_EXAMPLE
+#+begin_src
 ./
-├── README
-├── README[*Org\ Src\ README[\ python\ ]*]
-├── analysis
-│   └── vincent_plot.pdf
-├── data
-│   ├── 1369607.INDEL.csv
-│   ├── 1369607.SNP.csv
-│   ├── 1369628.INDEL.csv
-│   ├── 1369628.SNP.csv
-│   ├── Analysis_Summary-Sanger_Pipeline.pdf
-│   ├── all.fasta
-│   ├── fasta
-│   ├── fastq
-│   ├── raw_seq_nvbr
-│   ├── seq
-│   └── spectrograms
-└── scripts
-    ├── ab1_parser.py
-    ├── ab1_to_fastq
-    ├── exploratory_analysis.R
-    └── extract_raw_data.sh
+|-- README.org
+|-- analysis
+|   |-- plots
+|   |-- snp_distribution.pdf
+|   |-- snp_resume.pdf
+|   |-- substitution_distribution.pdf
+|   |-- trimmed_fastqc.html
+|   |-- untrimmed_fastqc.html
+|   `-- vincent_plot.pdf
+|-- data
+|   |-- 1369607.INDEL.csv
+|   |-- 1369607.SNP.csv
+|   |-- 1369628.INDEL.csv
+|   |-- 1369628.SNP.csv
+|   |-- Analysis_Summary-Sanger_Pipeline.pdf
+|   |-- all.fasta
+|   |-- fasta
+|   |-- fastq
+|   |-- id_table.dat
+|   |-- raw_seq_nvbr
+|   |-- reference.fasta
+|   |-- refseq.fasta
+|   |-- refseq_reverse.fasta
+|   |-- seq
+|   |-- spectrograms
+|   |-- strong.csv
+|   |-- tmp
+|   |-- trimmed.fasta
+|   |-- trimmed.fastq
+|   |-- untrimmed.fastq
+|   `-- variantCalling
+`-- scripts
+    |-- ab1_parser.py
+    |-- ab1_to_fastq
+    |-- exploratory_analysis.R
+    |-- extract_raw_data.sh
+    |-- make_id_table.py
+    |-- quality_check
+    |-- quality_trim.R
+    |-- trim_low_quality.sh
+    |-- variantCallerBwa.sh
+    |-- variantCallerSsaha2.sh
+    `-- variant_analysis.R
 
-8 directories, 13 files
-#+END_EXAMPLE
+11 directories, 32 files
+#+end_src
 
 | dir      | file                | description                                                  |
 |----------+---------------------+--------------------------------------------------------------|
@@ -58,6 +79,67 @@ tree ./ -L 2
 | scripts  | ab1_to_fastq        | convertit le fichier ab1 du stdin en fastq du stdout         |
 | scripts  | extract_raw_data.sh | extrait l'ensemble des données des fichiers .zip             |
 | analysis | vincent_plot.pdf    | le graphe de vincent du [2015-11-02 Mon]                     |
+
+* Commentaires
+** [2015-11-09 Mon]
+Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
+fichier [[./data/spectrograms/pS6-1073.ab1]] en contient. On repart des .ab1 avec un
+script [[./scripts/ab1_parser.py]], qui convertit les .ab1 en fasta et fastq. 
+
+Le fichier [[./data/fasta/pS6-1073.fst]] est toujours aussi mauvais. Erreurs de
+séquençage ? À exclure des analyses. 
+
+Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
+position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
+erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
+exclure des analyses.
+** [2015-11-16 Mon]
+La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
+spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
+utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
+[[./analysis/all_fastqc.html]]. Il a été convenu arbitrairement avec Vincent que les bases d'une
+qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
+[[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
+versions via /git/ éventuellement.
+
+J'écris également aujourd'hui le script [[./scripts/trim_low_quality.py]], qui
+enlève les 30 premières et dernières séquences, et qui empêche les séquences de
+trop mauvaise qualité d'être utilisées dans l'analyse. 
+
+Finalement, inutile de réinventer la roue. =Fastx_toolkit= devrait normalement
+faire ça très bien, mais ça ne fonctionne pas, pour des raisons que je ne
+m'explique pas. Cependant, je suis tombé sur l'utilitaire =BBmap=, qui contient
+entre autre, =bbduk=. [[~/.bin/bbmap/bbduk.sh][Voir le fichier source ici]], la page de téléchargement [[http://sourceforge.net/projects/bbmap/?source=typ_redirect][là]],
+et pour des commentaires sur l'utilisation [[http://seqanswers.com/forums/showthread.php?t=58221][Voir là]], et [[http://seqanswers.com/forums/showthread.php?t=42776][là]].
+
+** [2015-11-17 Tue]
+Je supprime donc le script =low_quality_trim.py=. J'utilise le script
+=low_quality_trim.sh=. 
+
+En résultat, comparer [[./analysis/trimmed_fastqc.html]] et
+[[./analysis/untrimmed_fastqc.html]]. On n'a plus que 179 séquences au lieu de 192,
+mais ça vaut le coup, la qualité est largement supérieure. 
+
+Je veux maintenant déterminer les SNPs. Il faut donc que j'aligne les séquences
+obtenues avec la séquence de référence [[./data/refseq.fasta]]. GATC utilise le
+software =SSAHA2= (voir [[http://www.sanger.ac.uk/science/tools/ssaha2-0][là]]) mais à priori il n'est plus utilisable. Le site
+recommande d'utiliser =SMALT=, (voir la page de téléchargement [[http://sourceforge.net/projects/smalt/?source=typ_redirect][là]], le manuel [[ftp://ftp.sanger.ac.uk/pub/resources/software/smalt/smalt-manual-0.7.4.pdf][là]]
+et la page du software [[http://www.sanger.ac.uk/science/tools/smalt-0][là]]. 
+
+En fait, je l'ai juste installé comme ça :
+
+#+BEGIN_SRC sh
+brew update
+brew tap homebrew/homebrew-science
+brew install smalt
+#+END_SRC
+
+Finalement, c'est encore un autre workflow que je veux adopter. On repart sur
+=ssaha2= et =ssaha2SNP=, la page de téléchargement étant [[ftp://ftp.sanger.ac.uk/pub/resources/software/ssaha2/][ici]]. 
+
+** [2015-11-18 Wed]
+Il faut clarifier les étapes permettant d'aligner et de déterminer les SNP. Ce
+qui est fait dans le script [[./scripts/variantCallerSsaha2.sh]]. 
 * data
 ** raw_seq_nvbr
 Contient les deux dataset au format .zip. DO NOT TOUCH.
@@ -504,64 +586,3 @@ On crée la table en question avec :
   ## STATISTICAL ANALYSIS
   ##==============================================================================
 #+END_SRC
-
-* Commentaires
-** [2015-11-09 Mon]
-Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
-fichier [[./data/spectrograms/pS6-1073.ab1]] en contient. On repart des .ab1 avec un
-script [[./scripts/ab1_parser.py]], qui convertit les .ab1 en fasta et fastq. 
-
-Le fichier [[./data/fasta/pS6-1073.fst]] est toujours aussi mauvais. Erreurs de
-séquençage ? À exclure des analyses. 
-
-Le fichier [[./data/fasta/pS9-1073.fst]] a un indel en position 343-342 et en
-position 397. Au vu du spectrogramme [[./data/spectrograms/pS9-1073.ab1]], c'est une
-erreur de séquençage. Globalement, qualité du séquençage pas très bonne. À
-exclure des analyses.
-** [2015-11-16 Mon]
-La semaine dernière, le script [[./scripts/ab1_parser.py]] convertissait tous les
-spectrograms de =ab1= vers =fastq=. Combiné en 1 fichier, =all.fastq=, on a
-utilisé /fastqc/ pour avoir une idée de la qualité. Le résultat dans
-[[./analysis/all_fastqc.html]]. Il a été convenu arbitrairement avec Vincent que les bases d'une
-qualité < 28 seraient exclues de l'analyse. Aujourd'hui, le script
-[[./scripts/ab1_parser.py]] va être modifié en conséquence. Voir les anciennes
-versions via /git/ éventuellement.
-
-J'écris également aujourd'hui le script [[./scripts/trim_low_quality.py]], qui
-enlève les 30 premières et dernières séquences, et qui empêche les séquences de
-trop mauvaise qualité d'être utilisées dans l'analyse. 
-
-Finalement, inutile de réinventer la roue. =Fastx_toolkit= devrait normalement
-faire ça très bien, mais ça ne fonctionne pas, pour des raisons que je ne
-m'explique pas. Cependant, je suis tombé sur l'utilitaire =BBmap=, qui contient
-entre autre, =bbduk=. [[~/.bin/bbmap/bbduk.sh][Voir le fichier source ici]], la page de téléchargement [[http://sourceforge.net/projects/bbmap/?source=typ_redirect][là]],
-et pour des commentaires sur l'utilisation [[http://seqanswers.com/forums/showthread.php?t=58221][Voir là]], et [[http://seqanswers.com/forums/showthread.php?t=42776][là]].
-
-** [2015-11-17 Tue]
-Je supprime donc le script =low_quality_trim.py=. J'utilise le script
-=low_quality_trim.sh=. 
-
-En résultat, comparer [[./analysis/trimmed_fastqc.html]] et
-[[./analysis/untrimmed_fastqc.html]]. On n'a plus que 179 séquences au lieu de 192,
-mais ça vaut le coup, la qualité est largement supérieure. 
-
-Je veux maintenant déterminer les SNPs. Il faut donc que j'aligne les séquences
-obtenues avec la séquence de référence [[./data/refseq.fasta]]. GATC utilise le
-software =SSAHA2= (voir [[http://www.sanger.ac.uk/science/tools/ssaha2-0][là]]) mais à priori il n'est plus utilisable. Le site
-recommande d'utiliser =SMALT=, (voir la page de téléchargement [[http://sourceforge.net/projects/smalt/?source=typ_redirect][là]], le manuel [[ftp://ftp.sanger.ac.uk/pub/resources/software/smalt/smalt-manual-0.7.4.pdf][là]]
-et la page du software [[http://www.sanger.ac.uk/science/tools/smalt-0][là]]. 
-
-En fait, je l'ai juste installé comme ça :
-
-#+BEGIN_SRC sh
-brew update
-brew tap homebrew/homebrew-science
-brew install smalt
-#+END_SRC
-
-Finalement, c'est encore un autre workflow que je veux adopter. On repart sur
-=ssaha2= et =ssaha2SNP=, la page de téléchargement étant [[ftp://ftp.sanger.ac.uk/pub/resources/software/ssaha2/][ici]]. 
-
-** [2015-11-18 Wed]
-Il faut clarifier les étapes permettant d'aligner et de déterminer les SNP. Ce
-qui est fait dans le script [[./scripts/variantCallerSsaha2.sh]]. 
