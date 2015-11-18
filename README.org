@@ -7,11 +7,11 @@
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
 
-* Tâches [3/7]
+* Tâches [4/7]
 - [X] écrire le script qui filtre les données sur la qualité
 - [X] comparer fastqc output
 - [X] refaire le SNP calling
-- [ ] réécrire les étapes pour arriver au SNP calling
+- [X] réécrire les étapes pour arriver au SNP calling
 - [ ] faire un SQL join dans R pour matcher query name et seq id.
 - [ ] analyser les données de SNP
 - [ ] préparer résultats vendredi <2015-11-20 Fri 10:00> 
@@ -224,7 +224,6 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   fastqc untrimmed.fastq -o ./tmp # analyse les données et output dans tmp
   mv ./tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
 #+END_SRC 
-
 ** variant calling
 
 #+name: Prérequis
@@ -300,16 +299,212 @@ Clairement pas la bonne façon de s'y prendre.
 
   # variant calling using ssaha2 and ssaha2SNP
 
+  cd ../data/variantCalling
+  cp ../trimmed.fastq .
+  ln -s ../refseq_reverse.fasta ./reference.fasta
   ## alignement à la séquence de référence
-  #'
-  #'
-  ~/.bin/ssahaSNP/ssaha2 ref.fasta reads.fastq ...
+  #' * -output psl : format de sortie psl
+  #' * reference.fasta : séquence de référence
+  #' * trimmed.fastq : séquence à aligner
+  #' * output.psl : fichier de sortie
+  ~/.bin/ssahaSNP/ssaha2 -output psl reference.fasta trimmed.fastq > output.psl
 
   ## polymorphism detection tool
-  #'
-  #'
-  ~/.bin/ssahaSNP/ssaahaSNP
+  ~/.bin/ssahaSNP/ssaahaSNP reference.fasta trimmed.fastq > SNP.txt
+
+  ## computer readable format conversion
+  egrep ssaha:SNP SNP.txt | awk '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15}' >  SNP.dat
+
+  ## column annotation based on ftp://ftp.sanger.ac.uk/pub/resources/software/ssahasnp/readme,
+  ## part (6) some further information
+  echo " match subject_name index_of_subject read_name s_base q_base s_qual q_qual offset_on_subject offset_on_read length_of_snp start_match_of_read end_match_of_read match_direction length_of_subject " > head.dat
+  # into final document
+  cat head.dat SNP.dat > snp_calling.dat
 #+END_SRC
+
+** variant analysis
+
+*** make id - query table
+Les spectrogrammes contiennent l'info de la sequence_id et du nom. 
+On construit une table avec la qualité du mutant en troisième colonne. 
+#+BEGIN_SRC python :tangle ./scripts/make_id_table.py
+  from Bio import SeqIO
+  import glob
+
+  def mutant_qualifier(record):
+      if 'S' in record:
+          return 'strong'
+      else:
+          return 'weak'
+
+  print "id name mutant"
+  for file in glob.glob("../data/spectrograms/*.ab1"):
+      with open(file, "rb") as spectro:
+          for record in SeqIO.parse(spectro, "abi"):
+              print record.id + " " + record.name + \
+                  " " + mutant_qualifier(record.name)
+#+END_SRC
+
+On crée la table en question avec :
+#+BEGIN_SRC sh
+  cd ./scripts/
+  python make_id_table.py > ../data/id_table.dat
+#+END_SRC
+
+*** analysis
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  setwd("~/stage/seq_novembre/data/variantCalling")
+
+  library(dplyr)
+  library(ggplot2)
+  library(extrafont)
+  library(ggthemes)
+
+  ## read the data
+  snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
+  ## enlève les colonnes inutiles
+  snp %>%
+      select( -match, -subject_name, -index_of_subject, -length_of_subject,
+             -match_direction) ->
+      snp
+  ## lit les métadonnées de séquence
+  id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
+
+  ## fait correspondre le read_name avec le nom du clone et le type de mutant W ou S
+  snp_data <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
+
+  ##==============================================================================
+  ## PLOT DISTRIBUTIONS
+  ##==============================================================================
+  snp_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
+      geom_density(aes(fill = mutant), alpha = 0.2) +
+      geom_histogram(aes(fill = mutant),
+                     binwidth = 10, position = "dodge") +
+      theme_minimal(base_family = "Courier") +
+      ## scale_y_tufte() +
+      scale_x_continuous(breaks = seq(1, 734, 30)) +
+      scale_fill_brewer(palette = "Set1") +
+      xlab("Distribution des SNP sur le gene sauvage") +
+      ylab("") +
+      theme(panel.ontop = TRUE,
+            legend.position = c(0.2, 0.6),
+            axis.text = element_text(size = 8, colour = "gray"),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.y = element_line(colour = "white", size = 1)) 
+
+
+  #' une fonction pour déterminer si la substitution est strong ou weak. On peut
+  #' avoir des substitutions weak chez les strongs
+  #' @param subject la base sur la séquence de référence
+  #' @param query la base sur le read.
+  mutant_caller <- function(subject, query) {
+      if (subject == 'A' || subject == 'T') {
+          if (query == 'C' || query == 'G' ) {
+              'strong'
+          } else {
+              'weak'
+          }
+      } else {
+          if (query == 'A' || query == 'G') {
+              'weak'
+          } else {
+              'strong'
+          }
+      }
+  }
+
+  ## on applique la fonction rowwise, ie ligne par ligne, via `mutate`, puis on
+  ## dégroupe.
+  snp_data %>%
+      rowwise() %>%
+      mutate(mutation_type = mutant_caller(s_base, q_base)) %>%
+      ungroup() ->
+      snp_data
+  ## conversion en facteur
+  snp_data$mutation_type = factor(snp_data$mutation_type)
+
+
+  ## distribution des SNP
+  ## facétée par type de mutant, couleur = type de mutation
+  mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
+      geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
+      facet_grid(~mutant, labeller = label_both) 
+
+  mutation_plot +
+      theme_minimal(base_family = "Courier") +
+      ## scale_y_tufte() +
+      scale_x_continuous(breaks = seq(1, 734, 60)) +
+      scale_fill_brewer(palette = "Set2",
+                        name = "Type de mutation",
+                        labels = c("AT -> GC", "GC -> AT")) +
+      xlab("Distribution des SNP sur le gene sauvage") +
+      ylab("") +
+      theme(panel.ontop = TRUE,
+            legend.position = c(0.6, 0.6),
+            axis.text = element_text(size = 8, colour = "gray"),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.y = element_line(colour = "white", size = 1)) ->
+      mutation_plot
+
+  ## distribution des SNP
+  ## facetée par type de mutation, couleur : type de mutant. 
+  muttype_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
+      geom_histogram(aes(fill = mutant), binwidth = 10, position = "dodge") +
+      facet_grid(~mutation_type, labeller = label_both) +
+      theme_minimal(base_family = "Courier") +
+      ## scale_y_tufte() +
+      scale_x_continuous(breaks = seq(1, 734, 60)) +
+      scale_fill_brewer(palette = "Dark2",
+                        name = "Type de mutant",
+                        labels = c("mutant strong", "mutant weak")) +
+      xlab("Distribution des SNP sur le gene sauvage") +
+      ylab("") +
+      theme(panel.ontop = TRUE,
+            legend.position = c(0.6, 0.6),
+            axis.text = element_text(size = 8, colour = "gray"),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.y = element_line(colour = "white", size = 1)) 
+
+  ##==============================================================================
+  ## SAVE PLOTS
+  ##==============================================================================
+  save_to_a5 <- function(output_file, plot)
+  {
+      pdf(file = output_file, height = 5.8, width = 8.3)
+      print(plot)
+      dev.off()
+  }
+
+  save_to_a3 <- function(output_file, plot)
+  {
+      # a3 dimensions : 11.69in x 16.53in
+      pdf(file = output_file, height = 11.69, width = 16.53)
+      print(plot)
+      dev.off()
+  }
+
+  save_to_a5(output_file = "../../analysis/substitution_distribution.pdf",
+             plot = mutation_plot)
+  save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
+             plot = snp_plot)
+
+  multi_plot <- plot_grid(snp_plot, mutation_plot, NULL, muttype_plot, ncol = 2, labels = c("A", "B", " ", "C"))
+
+  pdf(file = "../../analysis/snp_resume.pdf", height = 11.69, width = 16.53)
+  multi_plot
+  dev.off()
+
+  ##==============================================================================
+  ## STATISTICAL ANALYSIS
+  ##==============================================================================
+#+END_SRC
+
 * Commentaires
 ** [2015-11-09 Mon]
 Pas de données dans le fichier [[./data/fasta/pS6-1073.fas]], mais pourtant le
