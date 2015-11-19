@@ -6,6 +6,15 @@ library(extrafont)
 library(ggthemes)
 library(cowplot)
 
+##
+
+mytheme <- theme(panel.ontop = TRUE,
+                 axis.text = element_text(size = 8, colour = "gray"),
+                 panel.grid.major.x = element_blank(),
+                 panel.grid.minor.x = element_blank(),
+                 panel.grid.minor.y = element_blank(),
+                 panel.grid.major.y = element_line(colour = "white", size = 1)) 
+
 ## read the data
 snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
 ## enlève les colonnes inutiles
@@ -101,7 +110,7 @@ muttype_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
     theme_minimal(base_family = "Courier") +
     ## scale_y_tufte() +
     scale_x_continuous(breaks = seq(1, 734, 60)) +
-    scale_fill_brewer(palette = "Dark2",
+    scale_fill_brewer(palette = "Set2",
                       name = "Type de mutant",
                       labels = c("mutant strong", "mutant weak")) +
     xlab("Distribution des SNP sur le gene sauvage") +
@@ -126,7 +135,7 @@ save_to_a5 <- function(output_file, plot)
 
 save_to_a3 <- function(output_file, plot)
 {
-    # a3 dimensions : 11.69in x 16.53in
+                                        # a3 dimensions : 11.69in x 16.53in
     pdf(file = output_file, height = 11.69, width = 16.53)
     print(plot)
     dev.off()
@@ -146,5 +155,121 @@ multi_plot
 dev.off()
 
 ##==============================================================================
-## STATISTICAL ANALYSIS
+## SWITCH INITIAL
 ##==============================================================================
+snp_data %>%
+    group_by(name, mutation_type) %>%
+    summarise(switch_pos = min(offset_on_subject)) ->
+    switch_data_muttype
+
+## la position de switch sans tenir compte de la qualité des mutants
+switch_position_globale <- ggplot(switch_data_muttype, aes(switch_pos)) +
+    geom_histogram(fill = "black", binwidth = 5) +
+    theme_minimal(base_family = "Courier") +
+    xlab("") +
+    ylab("") +
+    annotate("rect", xmin = 160, xmax = 260, ymin = 0, ymax = 10, alpha = 0.4) + 
+    annotate("text", x = 220, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
+    annotate("rect", xmin = 480, xmax = 620, ymin = 0, ymax = 10, alpha = 0.4) + 
+    annotate("text", x = 550, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
+    mytheme
+switch_position_globale
+ggsave(switch_position_globale, file = "../../analysis/switch_position_globale.pdf",
+       height = 4, width = 7, units = "cm")
+
+## en tenant compte du type de mutation
+switch_pos_by_muttype <- ggplot(switch_data_muttype, aes(switch_pos)) +
+    geom_histogram(aes(fill = mutation_type),
+                   position = "dodge", 
+                   binwidth = 10) +
+    scale_x_continuous(breaks = seq(1, 734, 30)) +
+    theme_minimal(base_family = "Courier") +
+    scale_fill_discrete() +
+    xlab("Distribution de la qualite de la premiere substitution") +
+    ylab("") +
+    theme(legend.position = c(0.8, 0.7)) +
+    mytheme
+switch_pos_by_muttype
+## en tenant compte du type de mutant
+snp_data %>%
+    group_by(name, mutant) %>%
+    summarise(switch_pos = min(offset_on_subject)) ->
+    switch_data_mutant
+switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
+    geom_histogram(aes(fill = mutant),
+                   position = "dodge", 
+                   binwidth = 10) +
+    ## facet_grid(.~mutant) +
+    scale_x_continuous(breaks = seq(1, 734, 30)) +
+    theme_minimal(base_family = "Courier") +
+    scale_fill_discrete() +
+    xlab("Distribution de la position de switch en fonction du type de mutant") +
+    ylab("") +
+    theme(legend.position = c(0.8, 0.5)) +
+    mytheme
+switch_pos_by_mutant
+multi_switch_plot <- plot_grid(switch_pos_by_muttype, switch_pos_by_mutant, ncol = 1, labels = c("A", "B"))
+ggsave(multi_switch_plot, file = "../../analysis/switch_pos_by_mutant.pdf",
+       height = 21, width = 29.7, units = "cm")
+
+##==============================================================================
+## SWITCH TERMINAL
+##==============================================================================
+snp_data %>%
+    group_by(name, mutant) %>%
+    summarise(switch_pos = max(offset_on_subject)) ->
+    end_data_mutant
+
+pdf(file = "../../analysis/end_switch.pdf", width = 4, height = 4)
+print(
+    ggplot(end_data_mutant, aes(switch_pos)) +
+    geom_histogram(aes(fill = mutant),
+                   position = "dodge",
+                   binwidth = 1) +
+    theme_minimal() +
+    xlab("") + ylab("") +
+    theme(legend.position = c(0.4, 0.5)) +
+    mytheme
+)
+dev.off()
+
+##============================================================================== 
+## OUTLIERS
+##==============================================================================
+
+#' find_outlier
+#' ============
+#' une fonction qui détermine si le SNP en question est un outlier ou nom, c'est
+#' à dire une mutation strong chez un mutant weak ou inversement.
+#' @param mutant : le type de mutant
+#' @param mutation_type : le type de substitution
+find_outlier <- function(mutant, mutation_type)
+{
+    if (mutant == 'strong' && mutation_type == 'weak') {
+        'strong_weak'
+    } else if (mutant == 'weak' && mutation_type == 'strong') {
+        'weak_strong'
+    } else {
+        'attendu'
+    }
+}
+
+snp_data %>%
+    rowwise() %>%
+    mutate(outlier = find_outlier(mutant, mutation_type)) %>%
+    ungroup() ->
+    outlier_data
+
+pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
+outlier_data %>%
+    filter(outlier != "attendu") %>%
+    qplot(data = ., offset_on_subject, fill = outlier, binwidth = 10) +
+    theme_minimal(base_family = "Courier") +
+    xlab("") + ylab("") +
+    scale_fill_brewer(palette = "Set2",
+                      labels = c("S -> W", "W -> S")) +
+    theme(legend.position = c(0.2, 0.7),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 10)) +
+    mytheme 
+dev.off()
