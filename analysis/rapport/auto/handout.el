@@ -42,14 +42,14 @@
    (TeX-add-symbols
     "baselinestretch")
    (LaTeX-add-labels
-    "sec:orgheadline4"
+    "sec:orgheadline5"
     "sec:orgheadline1"
     "sec:orgheadline2"
     "sec:orgheadline3"
+    "sec:orgheadline4"
     "sec:orgheadline8"
-    "sec:orgheadline5"
-    "figure1"
     "sec:orgheadline6"
+    "figure1"
     "sec:orgheadline7"
     "figure2"
     "figure3"

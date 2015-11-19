@@ -1,4 +1,4 @@
-% Created 2015-11-19 Thu 00:27
+% Created 2015-11-19 Thu 02:03
 \documentclass[a4paper]{tufte-handout}
 \usepackage[scaled=0.95]{roboto}
 \usepackage{mathpazo}
@@ -101,7 +101,7 @@
 \maketitle
 
 \section{Qualité des données}
-\label{sec:orgheadline4}
+\label{sec:orgheadline5}
 \subsection{qualité du séquençage}
 \label{sec:orgheadline1}
 \begin{marginfigure}
@@ -125,14 +125,46 @@ généralement mal alignées. Elles ont été éliminées de l'analyse.
 
 \subsection{Présence de contaminations ?}
 \label{sec:orgheadline2}
-\subsection{Cohérence}
+Pas évident à déterminer : voir après. 
+\subsection{Observations générales}
 \label{sec:orgheadline3}
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+\textbf{nombre de SNP par} &  &  & \\
+\textbf{gene synthétique} & \textbf{moyen} & \textbf{sd} & \textbf{median}\\
+\midrule
+global & 14.4 & 6.4 & 15.0\\
+strong & 15.5 & 6.2 & 15.5\\
+weak & 13.3 & 6.5 & 13.0\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Nombre de SNPs}
+\label{sec:orgheadline4}
+
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+ & \textbf{strong} & \textbf{weak}\\
+\midrule
+nombre de SNP par gène synthétique & 1337 & 1162\\
+nombre de substitutions & \textbf{1791} & 708\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Pour un nombre de SNPs par mutant sensiblement équivalent, il y a \(2.53\) fois
+plus de substitutions \emph{strong} que \emph{weak} !
 
 \newpage
 \section{Distribution des SNPs}
 \label{sec:orgheadline8}
+
 \subsection{Distribution globale}
-\label{sec:orgheadline5}
+\label{sec:orgheadline6}
 \begin{figure*}[h]
   \centering
   \includegraphics[width=\linewidth]{../snp_distribution.pdf}
@@ -156,23 +188,6 @@ sur la fin de la conversion tract. Où se fait le switch ?
 \marginnote{ À noter qu'on n'a pas de SNP avant la position 61. C'est dû au 
 \emph{trimming} des séquences. On perd l'information des premiers SNP. 
 }
-
-\subsection{Nombre de SNPs}
-\label{sec:orgheadline6}
-
-\begin{center}
-\begin{tabular}{llr}
-\toprule
- & strong & weak\\
-\midrule
-nombre de SNP par gène synthétique & 1337 & 1162\\
-nombre de substitutions & \textbf{1791} & 708\\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Pour un nombre de SNPs par mutant sensiblement équivalent, il y a \(2.53\) fois
-plus de substitutions \emph{strong} que \emph{weak} !
 
 \subsection{Distribution de la qualité des mutation}
 \label{sec:orgheadline7}
@@ -200,7 +215,7 @@ Les SNP autour de la position 241 et 601 sont tous \emph{strong}. Comment interp
   \label{figure2}
 \end{figure}
 
-\newthought{Montré autrement}, on voit le problème encore plus clairement.  
+\newthought{Montré autrement}, on voit le problème plus clairement.  
 
 
 \begin{figure}[h]
@@ -213,6 +228,12 @@ Les SNP autour de la position 241 et 601 sont tous \emph{strong}. Comment interp
     des mutations \emph{strong} dans les deux types de mutants.}
   \label{figure3}
 \end{figure}
+
+\begin{marginfigure}
+  \includegraphics[width=\linewidth]{../outliers.pdf}
+  \caption{Avec ici un focus sur les \em{outliers} qui n'en sont pas}
+
+\end{marginfigure}
 
 \clearpage
 \section{Distribution de la position de basculement}
@@ -245,14 +266,26 @@ sorte de coldspot local, autour de 500bp sur la séquence de référence.
     fonction de la qualité du clone, Strong ou Weak. \\
     On ne semble pas voir de différence significative. Dans les deux cas, les
     distributions sont assez similaires pour le \emph{weak} et le \emph{strong}.
-    On peut cependant voir des différences entre les graphes \texttt{A} et
-    \texttt{B} . Par exemple, toutes les premières substitutions sont de type
+    Cependant, des différences existent entre les graphes \texttt{A} et
+    \texttt{B} : toutes les premières substitutions sont de type
     \emph{strong.} \\
     Il y a toujours le même patron de coldspot autour de 541bp.}
 \end{figure}
 
-À vu d'œil, il n'y a pas de variation significative sur la distribution des
-SNPs, quelle que soit la qualité du gène synthétique ou de la substitution. 
+Le graphe \texttt{A} a été obtenu en filtrant le jeu de donnée de la façon suivante : 
+\begin{itemize}
+\item groupe par clone et par type de mutation.
+\item demande la première position de SNP ``groupwise''.
+\end{itemize}
+
+Le graphe \texttt{B} a été obtenu en filtrant le jeu de donnée de la façon suivante :
+\begin{itemize}
+\item groupe par clone
+\item demande la première position de SNP ``groupwise''.
+\end{itemize}
+
+À vue d'œil, il n'y a pas de variation significative sur la distribution des
+SNPs, quelle que soit la qualité du gène synthétique ou de la substitution.
 
 \begin{marginfigure}
   \includegraphics[width=\linewidth]{../end_switch.pdf}

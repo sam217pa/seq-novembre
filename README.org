@@ -583,7 +583,7 @@ On crée la table en question avec :
       theme_minimal(base_family = "Courier") +
       ## scale_y_tufte() +
       scale_x_continuous(breaks = seq(1, 734, 60)) +
-      scale_fill_brewer(palette = "Dark2",
+      scale_fill_brewer(palette = "Set2",
                         name = "Type de mutant",
                         labels = c("mutant strong", "mutant weak")) +
       xlab("Distribution des SNP sur le gene sauvage") +
@@ -693,7 +693,7 @@ On crée la table en question avec :
       summarise(switch_pos = max(offset_on_subject)) ->
       end_data_mutant
 
-  pdf(file = "../../analysis/end_switch.pdf")
+  pdf(file = "../../analysis/end_switch.pdf", width = 4, height = 4)
   print(
       ggplot(end_data_mutant, aes(switch_pos)) +
       geom_histogram(aes(fill = mutant),
@@ -705,4 +705,46 @@ On crée la table en question avec :
       mytheme
   )
   dev.off()
+
+  ##============================================================================== 
+  ## OUTLIERS
+  ##==============================================================================
+
+  #' find_outlier
+  #' ============
+  #' une fonction qui détermine si le SNP en question est un outlier ou nom, c'est
+  #' à dire une mutation strong chez un mutant weak ou inversement.
+  #' @param mutant : le type de mutant
+  #' @param mutation_type : le type de substitution
+  find_outlier <- function(mutant, mutation_type)
+  {
+      if (mutant == 'strong' && mutation_type == 'weak') {
+          'strong_weak'
+      } else if (mutant == 'weak' && mutation_type == 'strong') {
+          'weak_strong'
+      } else {
+          'attendu'
+      }
+  }
+
+  snp_data %>%
+      rowwise() %>%
+      mutate(outlier = find_outlier(mutant, mutation_type)) %>%
+      ungroup() ->
+      outlier_data
+
+  pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
+  outlier_data %>%
+      filter(outlier != "attendu") %>%
+      qplot(data = ., offset_on_subject, fill = outlier, binwidth = 10) +
+      theme_minimal(base_family = "Courier") +
+      xlab("") + ylab("") +
+      scale_fill_brewer(palette = "Set2",
+                        labels = c("S -> W", "W -> S")) +
+      theme(legend.position = c(0.2, 0.7),
+            legend.title = element_blank(),
+            legend.text = element_text(size = 10)) +
+      mytheme 
+  dev.off()
+
 #+END_SRC

@@ -32,10 +32,31 @@ toutes les séquences qui avaient une longueur inférieure à $620$ étaient
 généralement mal alignées. Elles ont été éliminées de l'analyse. 
 
 ** Présence de contaminations ?
-** Cohérence 
+Pas évident à déterminer : voir après. 
+** Observations générales
+
+| *nombre de SNP par* |         |      |          |
+| *gene synthétique*  | *moyen* | *sd* | *median* |
+|---------------------+---------+------+----------|
+| <c>                 | <c>     | <c>  | <c>      |
+| global              | 14.4    | 6.4  | 15.0     |
+| strong              | 15.5    | 6.2  | 15.5     |
+| weak                | 13.3    | 6.5  | 13.0     |
+
+** Nombre de SNPs
+
+#+attr_latex: :environnement table
+|                                    | *strong* | *weak* |
+|------------------------------------+----------+--------|
+| nombre de SNP par gène synthétique | 1337     |   1162 |
+| nombre de substitutions            | *1791*   |    708 |
+       
+Pour un nombre de SNPs par mutant sensiblement équivalent, il y a $2.53$ fois
+plus de substitutions /strong/ que /weak/ !
 
 \newpage
 * Distribution des SNPs
+
 ** Distribution globale
 #+BEGIN_LaTeX
 \begin{figure*}[h]
@@ -64,17 +85,6 @@ sur la fin de la conversion tract. Où se fait le switch ?
 \emph{trimming} des séquences. On perd l'information des premiers SNP. 
 }
 #+END_LaTeX
-
-** Nombre de SNPs
-
-#+attr_latex: :environnement table
-|                                    | strong | weak |
-|------------------------------------+--------+------|
-| nombre de SNP par gène synthétique | 1337   | 1162 |
-| nombre de substitutions            | *1791* |  708 |
-       
-Pour un nombre de SNPs par mutant sensiblement équivalent, il y a $2.53$ fois
-plus de substitutions /strong/ que /weak/ !
 
 ** Distribution de la qualité des mutation 
 
@@ -118,6 +128,12 @@ Les SNP autour de la position 241 et 601 sont tous /strong/. Comment interpréte
   \label{figure3}
 \end{figure}
 
+\begin{marginfigure}
+  \includegraphics[width=\linewidth]{../outliers.pdf}
+  \caption{Avec ici un focus sur les \em{outliers} qui n'en sont pas}
+
+\end{marginfigure}
+
 #+END_LaTeX
 
 \clearpage
@@ -151,15 +167,24 @@ sorte de coldspot local, autour de 500bp sur la séquence de référence.
     fonction de la qualité du clone, Strong ou Weak. \\
     On ne semble pas voir de différence significative. Dans les deux cas, les
     distributions sont assez similaires pour le \emph{weak} et le \emph{strong}.
-    On peut cependant voir des différences entre les graphes \texttt{A} et
-    \texttt{B} . Par exemple, toutes les premières substitutions sont de type
+    Cependant, des différences existent entre les graphes \texttt{A} et
+    \texttt{B} : toutes les premières substitutions sont de type
     \emph{strong.} \\
     Il y a toujours le même patron de coldspot autour de 541bp.}
 \end{figure}
 #+END_LaTeX
 
-À vue d'œil, il n'y a pas de variation significative sur la distribution des
-SNPs, quelle que soit la qualité du gène synthétique ou de la substitution.
+Le graphe =A= a été obtenu en filtrant le jeu de donnée de la façon suivante : 
+- groupe par clone et par type de mutation.
+- demande la première position de SNP ``groupwise''.
+
+Le graphe =B= a été obtenu en filtrant le jeu de donnée de la façon suivante :
+- groupe par clone
+- demande la première position de SNP ``groupwise''. 
+
+\newthought{À vue d'œil}, il n'y a pas de variation significative sur la
+distribution des SNPs, quelle que soit la qualité du gène synthétique ou de la
+substitution.
 
 #+BEGIN_LaTeX
 \begin{marginfigure}
