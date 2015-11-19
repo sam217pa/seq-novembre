@@ -9,7 +9,7 @@
 
 * Qualité des données
 ** qualité du séquençage 
-#+name: qualité des séquence
+#+name: qualité des séquences
 #+BEGIN_LaTeX
 \begin{marginfigure}
   \includegraphics[width=\linewidth]{../untrimmed.png}
@@ -35,6 +35,7 @@ généralement mal alignées. Elles ont été éliminées de l'analyse.
 Pas évident à déterminer : voir après. 
 ** Observations générales
 
+#+attr_latex: :font \small
 | *nombre de SNP par* |         |      |          |
 | *gene synthétique*  | *moyen* | *sd* | *median* |
 |---------------------+---------+------+----------|
@@ -45,18 +46,26 @@ Pas évident à déterminer : voir après.
 
 ** Nombre de SNPs
 
-#+attr_latex: :environnement table
+#+attr_latex: :font \small
 |                                    | *strong* | *weak* |
 |------------------------------------+----------+--------|
-| nombre de SNP par gène synthétique | 1337     |   1162 |
-| nombre de substitutions            | *1791*   |    708 |
+| <c>                                | <c>      | <c>    |
+| nombre de SNP par gène synthétique | 1337     | 1162   |
+| nombre de substitutions            | *1970*   | 529    |
        
-Pour un nombre de SNPs par mutant sensiblement équivalent, il y a $2.53$ fois
-plus de substitutions /strong/ que /weak/ !
+Pour un nombre de SNPs par gène synthétique sensiblement équivalent, il y a
+$3.7$ fois plus de substitutions /strong/ que /weak/ !
+
+#+BEGIN_LaTeX
+\begin{marginfigure}
+  \includegraphics[width=\linewidth]{../strong_vs_weak.pdf}
+  \caption{Distribution du nombre de substitutions de type \emph{strong,} comparée à
+    celles de type \emph{weak.} }
+\end{marginfigure}
+#+END_LaTeX
 
 \newpage
 * Distribution des SNPs
-
 ** Distribution globale
 #+BEGIN_LaTeX
 \begin{figure*}[h]
@@ -69,36 +78,34 @@ plus de substitutions /strong/ que /weak/ !
 \end{figure*}
 #+END_LaTeX
 
-Sans tenir compte de la qualité des mutations, on obtient le résultat en figure
-\ref{figure1}. Il semble qu'il n'y ait pas de différence significative dans la
-position des mutations entre les deux types de mutants.
+Ce graphe représente la distribution des SNPs sur la séquence de référence. Les
+barres vertes représentent les SNP des gènes synthétiques Strong, les rouges
+celles des Weak. 
 
+Première observation : il y a plus de SNP dans les régions 5' que 3'. Artefact
+de séquençage ? Quand on regarde la qualité du /base call/ et les spectrogrammes
+associés, il ne semble pas. 
 
-Malgré les filtres, il reste du bruit de fond, avec quelques SNP qui ne sont pas
-à leur place normale.
+Deuxième observation : les gènes synthétiques Strong génèrent plus de SNPs en 3'
+que les Weak. À tester, pas certain que ce soit significatif. 
 
-Principale conclusion : il y a plus de substitutions dans les régions 3' que 5',
+Troisème observation : malgré les filtres et le tronquage, il reste du bruit.
+Quelques SNP ne sont pas à leur place attendue. Pas facile à éliminer…
+
+\newthought{Conclusion} : il y a plus de substitutions dans les régions 3' que 5',
 sur la fin de la conversion tract. Où se fait le switch ? 
 
 #+BEGIN_LaTeX
-\marginnote{ À noter qu'on n'a pas de SNP avant la position 61. C'est dû au 
-\emph{trimming} des séquences. On perd l'information des premiers SNP. 
-}
+\marginnote{ À noter qu'on n'a pas de SNP après la position 691, alors que la
+  séquence de référence mesure $734$bp. C'est dû au \emph{trimming} des
+  séquences. On perd l'information des premiers SNP. }
 #+END_LaTeX
 
+\newpage
 ** Distribution de la qualité des mutation 
 
-Le graphe suivant montre un résultat surprenant. Lorsque le gène synthétique est
-de type Strong, les substitutions occasionnées sont --- quasiment ---
-exclusivement de type /strong/. 
-
-Mais lorsque le mutant est de type Weak, les substitutions occasionnées sont à la
-fois de type /weak/ et de type /strong/, en fonction de la localisation du SNP.
-Les SNP autour de la position 241 et 601 sont tous /strong/. Comment interpréter
-ça ?
-
 #+BEGIN_LaTeX
-\begin{figure}[h]
+\begin{figure*}[h]
   \centering
   \includegraphics[width=\linewidth]{../substitution_distribution.pdf}
   \caption{\textbf{Distribution des SNP par position sur la séquence de référence.} \\
@@ -110,35 +117,65 @@ Les SNP autour de la position 241 et 601 sont tous /strong/. Comment interpréte
   à l'attendu. 
   }
   \label{figure2}
-\end{figure}
+\end{figure*}
 #+END_LaTeX
 
+Ce graphe montre un résultat surprenant. 
+
+À gauche, la distribution des SNP générés par les gènes synthétiques de type
+Strong ; à droite, celle des gènes synthétiques de type Weak. Les barres vertes
+représentent les substitutions vers $GC$, /strong/ ; les barres rouges les
+substitutions vers $AT$, /weak/.
+
+Lorsque le gène synthétique est de type Strong, les substitutions occasionnées
+sont --- quasiment --- exclusivement de type /strong/.
+
+Mais lorsque le gène synthétique est de type Weak, les substitutions
+occasionnées sont à la fois de type /weak/ et de type /strong/. Les positions
+particulièrement concernées sont celles autour de $60$, $240$, $420$ et $600$
+bp.
+
+\newpage
 \newthought{Montré autrement}, on voit le problème plus clairement.  
 
 #+BEGIN_LaTeX
 
-\begin{figure}[h]
+\begin{figure*}[h]
   \centering
   \includegraphics[width=\linewidth]{../muttype_plot.pdf}
   \caption{\textbf{Distribution de la qualité des substitutions}. \\
-    À gauche la distribution des substitutions vers GC, à droite celle des
-    substitutions vers A ou T. On voit bien que les mutations \emph{weak} sont
+    À gauche la distribution des substitutions vers $GC$, à droite celle des
+    substitutions vers $A$ ou $T$. On voit bien que les mutations \emph{weak} sont
     quasiment exclusivement dans les mutants de type Weak, alors qu'on retrouve
     des mutations \emph{strong} dans les deux types de mutants.}
   \label{figure3}
-\end{figure}
+\end{figure*}
 
-\begin{marginfigure}
+\begin{marginfigure}[5in]
   \includegraphics[width=\linewidth]{../outliers.pdf}
   \caption{Avec ici un focus sur les \em{outliers} qui n'en sont pas}
-
+  \label{figure7}
 \end{marginfigure}
-
 #+END_LaTeX
+
+À gauche, la distribution des substitutions de type /strong/, vers $GC$. À droite,
+celle des substitutions de type /weak/, vers $AT$. Les barres vertes
+représentent les substitutions générés par les gènes synthétiques Strong, les
+rouges celles des Weak. 
+
+En figure \ref{figure7}, la distribution de ces SNP qui ne devraient pas
+exister : les substitutions /strong/ générées par les mutants Weak --- en rouge
+---, et les substitutions /weak/ générées par les mutants Strong --- en vert
+---. Trois graphes pour dire la même chose. 
+
+\newthought{Conclusion} : seuls les gènes synthétiques Weak génèrent des
+substitutions /weak/. Les substitutions /strong/ sont générées à la fois par les
+gènes synthétiques Strong et par les Weak.
+
 
 \clearpage
 * Distribution de la position de basculement
-** Basculement global
+** Basculement terminal global
 #+BEGIN_LaTeX
 \begin{figure}
   \centering
@@ -151,14 +188,18 @@ Les SNP autour de la position 241 et 601 sont tous /strong/. Comment interpréte
     la séquence de référence. }
 \end{figure}
 #+END_LaTeX
-Il y a des disparités dans la distribution des positions de basculement. Il y a
-beaucoup de basculement dès le début, moins vers la fin. Il semble y avoir une
-sorte de coldspot local, autour de 500bp sur la séquence de référence. 
 
-** Position initiale de basculement par type de mutation
+Ce graphe représente la distribution du dernier SNP par mutant : autrement dit,
+la position de basculement. 
+
+Il y a une très forte hétérogénéité : la distribution est clairement
+multi-modale. Peut-on parler de coldspot / hotspot local ?
+
+\newpage
+** Position terminale de basculement par type de mutation
 
 #+BEGIN_LaTeX
-\begin{figure}
+\begin{figure*}
   \includegraphics[width=\linewidth]{../switch_pos_by_mutant.pdf}
   \caption{Position des switch en fonction du type de mutant. \\
     Le graphe \texttt{A} représente la distribution et la qualité du premier
@@ -171,27 +212,40 @@ sorte de coldspot local, autour de 500bp sur la séquence de référence.
     \texttt{B} : toutes les premières substitutions sont de type
     \emph{strong.} \\
     Il y a toujours le même patron de coldspot autour de 541bp.}
-\end{figure}
+\end{figure*}
 #+END_LaTeX
 
 Le graphe =A= a été obtenu en filtrant le jeu de donnée de la façon suivante : 
 - groupe par clone et par type de mutation.
 - demande la première position de SNP ``groupwise''.
+Il représente la position du dernier SNP de type /strong/ ou /weak/, par gène
+synthétique. En fait il ne veut pas dire grand chose mais j'ai pas eu le temps
+de l'enlever…
 
 Le graphe =B= a été obtenu en filtrant le jeu de donnée de la façon suivante :
 - groupe par clone
-- demande la première position de SNP ``groupwise''. 
+- demande la première position de SNP ``groupwise''.
+Il représente la position du dernier SNP par type de gène synthétique. Il
+correspond au graphe de Vincent en figure \ref{figvincent}. 
 
-\newthought{À vue d'œil}, il n'y a pas de variation significative sur la
-distribution des SNPs, quelle que soit la qualité du gène synthétique ou de la
-substitution.
-
+\newthought{À vue d'œil}, il ne semble pas que les distributions soient très
+différentes. Autrement dit, le point de fin de conversion me paraît être
+distribué de la même façon, que le gène synthétique soit Strong ou Weak.
+\newpage
 #+BEGIN_LaTeX
 \begin{marginfigure}
   \includegraphics[width=\linewidth]{../end_switch.pdf}
-  \caption{Position du dernier SNP.\\
+  \caption{Position du premier SNP.\\
     Pas de variation là dessus. À priori les deux mutants terminent au même
-    endroit, c'est à dire au dernier site avant le cutoff de trimming. 
+    endroit, c'est à dire au premier site avant le cutoff de trimming. 
   }
+\end{marginfigure}
+
+
+\begin{marginfigure}
+  \includegraphics[width=\linewidth]{../vincent_plot.pdf}
+  \caption{Position du dernier SNP. 
+  }
+  \label{figvincent}
 \end{marginfigure}
 #+END_LaTeX

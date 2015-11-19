@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.11.13)  19 NOV 2015 02:30
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.11.13)  19 NOV 2015 15:51
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1720,8 +1720,12 @@ Overfull \hbox (0.1056pt too wide) in paragraph at lines 118--120
 lité. Sur 
  []
 
+LaTeX Font Info:    Font shape `T1/Roboto-LF/m/n' will be
+(Font)              scaled to size 4.74998pt on input line 134.
+LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
+(Font)              scaled to size 4.25003pt on input line 134.
 ! Undefined control sequence.
-l.134 \toprule
+l.135 \toprule
               
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1729,12 +1733,12 @@ misspelled it (e.g., `\hobx'), type `I' and the correct
 spelling (e.g., `I\hbox'). Otherwise just continue,
 and I'll forget about whatever was undefined.
 
-LaTeX Font Info:    Font shape `T1/pplj/bx/n' in size <10> not available
-(Font)              Font shape `T1/pplj/b/n' tried instead on input line 135.
+LaTeX Font Info:    Font shape `T1/pplj/bx/n' in size <9> not available
+(Font)              Font shape `T1/pplj/b/n' tried instead on input line 136.
 ! Undefined control sequence.
 <recently read> \midrule 
                          
-l.137 \midrule
+l.138 \midrule
               
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1745,7 +1749,7 @@ and I'll forget about whatever was undefined.
 ! Undefined control sequence.
 <recently read> \bottomrule 
                             
-l.141 \bottomrule
+l.142 \bottomrule
                  
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1754,7 +1758,7 @@ spelling (e.g., `I\hbox'). Otherwise just continue,
 and I'll forget about whatever was undefined.
 
 ! Undefined control sequence.
-l.150 \toprule
+l.152 \toprule
               
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1765,7 +1769,7 @@ and I'll forget about whatever was undefined.
 ! Undefined control sequence.
 <recently read> \midrule 
                          
-l.152 \midrule
+l.154 \midrule
               
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1776,7 +1780,7 @@ and I'll forget about whatever was undefined.
 ! Undefined control sequence.
 <recently read> \bottomrule 
                             
-l.155 \bottomrule
+l.157 \bottomrule
                  
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1784,33 +1788,40 @@ misspelled it (e.g., `\hobx'), type `I' and the correct
 spelling (e.g., `I\hbox'). Otherwise just continue,
 and I'll forget about whatever was undefined.
 
-[1
+<../strong_vs_weak.pdf, id=19, 289.08pt x 289.08pt>
+File: ../strong_vs_weak.pdf Graphic file (type pdf)
+
+<use ../strong_vs_weak.pdf>
+Package pdftex.def Info: ../strong_vs_weak.pdf used on input line 165.
+(pdftex.def)             Requested size: 140.5566pt x 140.5565pt.
+ [1
 
 {/usr/local/texlive/2015/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <../untr
-immed.png> <../trimmed.png>]
-<../snp_distribution.pdf, id=38, 599.23875pt x 418.56375pt>
+immed.png> <../trimmed.png> <../strong_vs_weak.pdf>] <../snp_distribution.pdf, 
+id=45, 599.23875pt x 418.56375pt>
 File: ../snp_distribution.pdf Graphic file (type pdf)
 
 <use ../snp_distribution.pdf>
-Package pdftex.def Info: ../snp_distribution.pdf used on input line 170.
+Package pdftex.def Info: ../snp_distribution.pdf used on input line 177.
 (pdftex.def)             Requested size: 468.3323pt x 327.13623pt.
 
 
 LaTeX Warning: Marginpar on page 2 moved.
 
-<../substitution_distribution.pdf, id=40, 599.23875pt x 418.56375pt>
+[2 <../snp_distribution.pdf>]
+<../substitution_distribution.pdf, id=62, 599.23875pt x 418.56375pt>
 File: ../substitution_distribution.pdf Graphic file (type pdf)
 
 <use ../substitution_distribution.pdf>
-Package pdftex.def Info: ../substitution_distribution.pdf used on input line 20
-6.
-(pdftex.def)             Requested size: 304.44447pt x 212.65356pt.
+Package pdftex.def Info: ../substitution_distribution.pdf used on input line 21
+1.
+(pdftex.def)             Requested size: 468.3323pt x 327.13623pt.
 
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
 misspelled it (e.g., `\hobx'), type `I' and the correct
@@ -1820,8 +1831,8 @@ and I'll forget about whatever was undefined.
 ! Argument of \@iiminipage has an extra }.
 <inserted text> 
                 \par 
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
 this error. If you simply proceed now, the `\par' that
@@ -1834,8 +1845,8 @@ Runaway argument?
 ! Paragraph ended before \@iiminipage was complete.
 <to be read again> 
                    \par 
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
@@ -1843,8 +1854,8 @@ My plan is to forget the whole thing and hope for the best.
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
 misspelled it (e.g., `\hobx'), type `I' and the correct
@@ -1854,8 +1865,8 @@ and I'll forget about whatever was undefined.
 ! Argument of \@tempf has an extra }.
 <inserted text> 
                 \par 
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
 this error. If you simply proceed now, the `\par' that
@@ -1868,30 +1879,111 @@ Runaway argument?
 ! Paragraph ended before \@tempf was complete.
 <to be read again> 
                    \par 
-l.216 \end{figure}
-                  
+l.221 \end{figure*}
+                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
 
-LaTeX Font Info:    Font shape `T1/pplj/bx/n' in size <9> not available
-(Font)              Font shape `T1/pplj/b/n' tried instead on input line 216.
-LaTeX Font Info:    Font shape `T1/Roboto-LF/m/n' will be
-(Font)              scaled to size 4.74998pt on input line 216.
-LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
-(Font)              scaled to size 4.25003pt on input line 216.
-[2 <../snp_distribution.pdf>]
-<../muttype_plot.pdf, id=58, 599.23875pt x 418.56375pt>
+[3 <../substitution_distribution.pdf>]
+<../muttype_plot.pdf, id=76, 599.23875pt x 418.56375pt>
 File: ../muttype_plot.pdf Graphic file (type pdf)
 
 <use ../muttype_plot.pdf>
-Package pdftex.def Info: ../muttype_plot.pdf used on input line 223.
+Package pdftex.def Info: ../muttype_plot.pdf used on input line 244.
+(pdftex.def)             Requested size: 468.3323pt x 327.13623pt.
+
+! Undefined control sequence.
+\\->\let \reserved@e 
+                     \relax \let \reserved@f \relax \@ifstar {\let \reserved...
+l.251 \end{figure*}
+                   
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Argument of \@iiminipage has an extra }.
+<inserted text> 
+                \par 
+l.251 \end{figure*}
+                   
+I've run across a `}' that doesn't seem to match anything.
+For example, `\def\a#1{...}' and `\a}' would produce
+this error. If you simply proceed now, the `\par' that
+I've just inserted will cause me to report a runaway
+argument that might be the root of the problem. But if
+your `}' was spurious, just type `2' and it will go away.
+
+Runaway argument?
+{\floatalignment }{\def \reserved@a *{\let \reserved@e \vadjust \let \ETC.
+! Paragraph ended before \@iiminipage was complete.
+<to be read again> 
+                   \par 
+l.251 \end{figure*}
+                   
+I suspect you've forgotten a `}', causing me to apply this
+control sequence to too much text. How can we recover?
+My plan is to forget the whole thing and hope for the best.
+
+! Undefined control sequence.
+\\->\let \reserved@e 
+                     \relax \let \reserved@f \relax \@ifstar {\let \reserved...
+l.251 \end{figure*}
+                   
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Argument of \@tempf has an extra }.
+<inserted text> 
+                \par 
+l.251 \end{figure*}
+                   
+I've run across a `}' that doesn't seem to match anything.
+For example, `\def\a#1{...}' and `\a}' would produce
+this error. If you simply proceed now, the `\par' that
+I've just inserted will cause me to report a runaway
+argument that might be the root of the problem. But if
+your `}' was spurious, just type `2' and it will go away.
+
+Runaway argument?
+\@captype {\def \reserved@a *{\let \reserved@e \vadjust \let \reserved@f \ETC.
+! Paragraph ended before \@tempf was complete.
+<to be read again> 
+                   \par 
+l.251 \end{figure*}
+                   
+I suspect you've forgotten a `}', causing me to apply this
+control sequence to too much text. How can we recover?
+My plan is to forget the whole thing and hope for the best.
+
+<../outliers.pdf, id=77, 289.08pt x 144.54pt>
+File: ../outliers.pdf Graphic file (type pdf)
+ <use ../outliers.pdf>
+Package pdftex.def Info: ../outliers.pdf used on input line 254.
+(pdftex.def)             Requested size: 140.5566pt x 70.27824pt.
+
+Overfull \hbox (2.619pt too wide) in paragraph at lines 253--255
+ [] 
+ []
+
+[4 <../muttype_plot.pdf> <../outliers.pdf>]
+<../switch_position_globale.pdf, id=96, 599.23875pt x 418.56375pt>
+File: ../switch_position_globale.pdf Graphic file (type pdf)
+
+<use ../switch_position_globale.pdf>
+Package pdftex.def Info: ../switch_position_globale.pdf used on input line 281.
+
 (pdftex.def)             Requested size: 304.44447pt x 212.65356pt.
 
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.230 \end{figure}
+l.288 \end{figure}
                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1902,7 +1994,7 @@ and I'll forget about whatever was undefined.
 ! Argument of \@iiminipage has an extra }.
 <inserted text> 
                 \par 
-l.230 \end{figure}
+l.288 \end{figure}
                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
@@ -1916,7 +2008,7 @@ Runaway argument?
 ! Paragraph ended before \@iiminipage was complete.
 <to be read again> 
                    \par 
-l.230 \end{figure}
+l.288 \end{figure}
                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
@@ -1925,7 +2017,7 @@ My plan is to forget the whole thing and hope for the best.
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.230 \end{figure}
+l.288 \end{figure}
                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -1936,7 +2028,7 @@ and I'll forget about whatever was undefined.
 ! Argument of \@tempf has an extra }.
 <inserted text> 
                 \par 
-l.230 \end{figure}
+l.288 \end{figure}
                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
@@ -1950,111 +2042,31 @@ Runaway argument?
 ! Paragraph ended before \@tempf was complete.
 <to be read again> 
                    \par 
-l.230 \end{figure}
+l.288 \end{figure}
                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
 
-<../outliers.pdf, id=59, 289.08pt x 144.54pt>
-File: ../outliers.pdf Graphic file (type pdf)
- <use ../outliers.pdf>
-Package pdftex.def Info: ../outliers.pdf used on input line 233.
-(pdftex.def)             Requested size: 140.5566pt x 70.27824pt.
- [3 <../substitution_distribution.pdf> <../muttype_plot.pdf> <../outliers.pdf>]
+[5
 
-<../switch_position_globale.pdf, id=84, 198.7425pt x 113.42375pt>
-File: ../switch_position_globale.pdf Graphic file (type pdf)
-
-<use ../switch_position_globale.pdf>
-Package pdftex.def Info: ../switch_position_globale.pdf used on input line 245.
-
-(pdftex.def)             Requested size: 304.44447pt x 173.76793pt.
-
-! Undefined control sequence.
-\\->\let \reserved@e 
-                     \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.252 \end{figure}
-                  
-The control sequence at the end of the top line
-of your error message was never \def'ed. If you have
-misspelled it (e.g., `\hobx'), type `I' and the correct
-spelling (e.g., `I\hbox'). Otherwise just continue,
-and I'll forget about whatever was undefined.
-
-! Argument of \@iiminipage has an extra }.
-<inserted text> 
-                \par 
-l.252 \end{figure}
-                  
-I've run across a `}' that doesn't seem to match anything.
-For example, `\def\a#1{...}' and `\a}' would produce
-this error. If you simply proceed now, the `\par' that
-I've just inserted will cause me to report a runaway
-argument that might be the root of the problem. But if
-your `}' was spurious, just type `2' and it will go away.
-
-Runaway argument?
-{\floatalignment }{\def \reserved@a *{\let \reserved@e \vadjust \let \ETC.
-! Paragraph ended before \@iiminipage was complete.
-<to be read again> 
-                   \par 
-l.252 \end{figure}
-                  
-I suspect you've forgotten a `}', causing me to apply this
-control sequence to too much text. How can we recover?
-My plan is to forget the whole thing and hope for the best.
-
-! Undefined control sequence.
-\\->\let \reserved@e 
-                     \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.252 \end{figure}
-                  
-The control sequence at the end of the top line
-of your error message was never \def'ed. If you have
-misspelled it (e.g., `\hobx'), type `I' and the correct
-spelling (e.g., `I\hbox'). Otherwise just continue,
-and I'll forget about whatever was undefined.
-
-! Argument of \@tempf has an extra }.
-<inserted text> 
-                \par 
-l.252 \end{figure}
-                  
-I've run across a `}' that doesn't seem to match anything.
-For example, `\def\a#1{...}' and `\a}' would produce
-this error. If you simply proceed now, the `\par' that
-I've just inserted will cause me to report a runaway
-argument that might be the root of the problem. But if
-your `}' was spurious, just type `2' and it will go away.
-
-Runaway argument?
-\@captype {\def \reserved@a *{\let \reserved@e \vadjust \let \reserved@f \ETC.
-! Paragraph ended before \@tempf was complete.
-<to be read again> 
-                   \par 
-l.252 \end{figure}
-                  
-I suspect you've forgotten a `}', causing me to apply this
-control sequence to too much text. How can we recover?
-My plan is to forget the whole thing and hope for the best.
-
-<../switch_pos_by_mutant.pdf, id=85, 844.15375pt x 597.23125pt>
+ <../switch_position_globale.pdf>]
+<../switch_pos_by_mutant.pdf, id=113, 844.15375pt x 597.23125pt>
 File: ../switch_pos_by_mutant.pdf Graphic file (type pdf)
 
 <use ../switch_pos_by_mutant.pdf>
-Package pdftex.def Info: ../switch_pos_by_mutant.pdf used on input line 261.
-(pdftex.def)             Requested size: 304.44447pt x 215.39494pt.
+Package pdftex.def Info: ../switch_pos_by_mutant.pdf used on input line 301.
+(pdftex.def)             Requested size: 468.3323pt x 331.34879pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 261--273
+Underfull \hbox (badness 10000) in paragraph at lines 301--313
 
  []
 
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
 misspelled it (e.g., `\hobx'), type `I' and the correct
@@ -2064,8 +2076,8 @@ and I'll forget about whatever was undefined.
 ! Argument of \@iiminipage has an extra }.
 <inserted text> 
                 \par 
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
 this error. If you simply proceed now, the `\par' that
@@ -2078,8 +2090,8 @@ Runaway argument?
 ! Paragraph ended before \@iiminipage was complete.
 <to be read again> 
                    \par 
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
@@ -2087,8 +2099,8 @@ My plan is to forget the whole thing and hope for the best.
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
 misspelled it (e.g., `\hobx'), type `I' and the correct
@@ -2098,8 +2110,8 @@ and I'll forget about whatever was undefined.
 ! Argument of \@tempf has an extra }.
 <inserted text> 
                 \par 
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
 this error. If you simply proceed now, the `\par' that
@@ -2112,18 +2124,18 @@ Runaway argument?
 ! Paragraph ended before \@tempf was complete.
 <to be read again> 
                    \par 
-l.273 \end{figure}
-                  
+l.313 \end{figure*}
+                   
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
 
-LaTeX Font Info:    Try loading font information for T1+zi4 on input line 273.
+LaTeX Font Info:    Try loading font information for T1+zi4 on input line 313.
 (/usr/local/texlive/2015/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2014/06/22 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 8.09995pt on input line 273.
+(Font)              scaled to size 8.09995pt on input line 313.
 Package microtype Info: Loading generic settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
@@ -2135,26 +2147,25 @@ Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/m/n/9'.
 (microtype)             Ignoring protrusion settings for this character.
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 8.99994pt on input line 275.
+(Font)              scaled to size 8.99994pt on input line 315.
 Package microtype Info: Character `textendash ' is missing
 (microtype)             in font `T1/zi4/m/n/10'.
 (microtype)             Ignoring protrusion settings for this character.
 Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/m/n/10'.
 (microtype)             Ignoring protrusion settings for this character.
- [4
-
- <../switch_position_globale.pdf> <../switch_pos_by_mutant.pdf>]
-<../end_switch.pdf, id=114, 289.08pt x 289.08pt>
+ [6 <../switch_pos_by_mutant.pdf>] <../end_switch.pdf, id=131, 289.08pt x 289.0
+8pt>
 File: ../end_switch.pdf Graphic file (type pdf)
- <use ../end_switch.pdf>
-Package pdftex.def Info: ../end_switch.pdf used on input line 291.
+
+<use ../end_switch.pdf>
+Package pdftex.def Info: ../end_switch.pdf used on input line 339.
 (pdftex.def)             Requested size: 140.5566pt x 140.5565pt.
 
 ! Undefined control sequence.
 \\->\let \reserved@e 
                      \relax \let \reserved@f \relax \@ifstar {\let \reserved...
-l.295   }
+l.343   }
          
 The control sequence at the end of the top line
 of your error message was never \def'ed. If you have
@@ -2165,7 +2176,7 @@ and I'll forget about whatever was undefined.
 ! Argument of \@tempf has an extra }.
 <inserted text> 
                 \par 
-l.295   }
+l.343   }
          
 I've run across a `}' that doesn't seem to match anything.
 For example, `\def\a#1{...}' and `\a}' would produce
@@ -2179,23 +2190,35 @@ Runaway argument?
 ! Paragraph ended before \@tempf was complete.
 <to be read again> 
                    \par 
-l.295   }
+l.343   }
          
 I suspect you've forgotten a `}', causing me to apply this
 control sequence to too much text. How can we recover?
 My plan is to forget the whole thing and hope for the best.
 
 
+LaTeX Warning: Marginpar on page 7 moved.
+
+<../vincent_plot.pdf, id=132, 505.89pt x 505.89pt>
+File: ../vincent_plot.pdf Graphic file (type pdf)
+ <use ../vincent_plot.pdf>
+Package pdftex.def Info: ../vincent_plot.pdf used on input line 348.
+(pdftex.def)             Requested size: 140.5566pt x 140.55981pt.
+
+
+LaTeX Warning: Marginpar on page 7 moved.
+
+
 Package bibentry Warning: You have used \nobibliography* 
 (bibentry)                without a following \bibliography.
 (bibentry)                You may not be able to run BibTeX.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 297.
-[5 <../end_switch.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 297.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 353.
+[7 <../end_switch.pdf> <../vincent_plot.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 353.
  (./handout.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 297.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 297.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 353.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 353.
 Package rerunfilecheck Info: File `handout.out' has not changed.
 (rerunfilecheck)             Checksum: C84B36C84B09A3B2ACCA732481E1A44B;572.
 
@@ -2203,16 +2226,16 @@ Package rerunfilecheck Info: File `handout.out' has not changed.
 LaTeX Font Warning: Size substitutions with differences
 (Font)              up to 0.95987pt have occurred.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 297.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 353.
  ) 
 Here is how much of TeX's memory you used:
- 26943 strings out of 493054
- 467855 string characters out of 6134759
- 536627 words of memory out of 5000000
- 29602 multiletter control sequences out of 15000+600000
- 149761 words of font info for 367 fonts, out of 8000000 for 9000
+ 26974 strings out of 493054
+ 468244 string characters out of 6134759
+ 536777 words of memory out of 5000000
+ 29610 multiletter control sequences out of 15000+600000
+ 149042 words of font info for 385 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 46i,11n,51p,10395b,901s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 46i,11n,51p,10395b,821s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2015/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}{
 /usr/local/texlive/2015/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/texl
 ive/2015/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/l
@@ -2224,10 +2247,10 @@ xlive/2015/texmf-dist/fonts/type1/public/fpl/fplrc8a.pfb></usr/local/texlive/20
 f-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive/2015/texmf-dist/
 fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/t
 ype1/urw/palatino/uplri8a.pfb>
-Output written on handout.pdf (5 pages, 162314 bytes).
+Output written on handout.pdf (7 pages, 273552 bytes).
 PDF statistics:
- 165 PDF objects out of 1000 (max. 8388607)
- 129 compressed objects within 2 object streams
- 26 named destinations out of 1000 (max. 500000)
- 170054 words of extra memory for PDF output out of 184870 (max. 10000000)
+ 250 PDF objects out of 1000 (max. 8388607)
+ 194 compressed objects within 2 object streams
+ 30 named destinations out of 1000 (max. 500000)
+ 161872 words of extra memory for PDF output out of 184870 (max. 10000000)
 

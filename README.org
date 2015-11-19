@@ -471,7 +471,7 @@ On crée la table en question avec :
 
 *** analysis
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
-  setwd("~/stage/seq_novembre/data/variantCalling")
+  setwd("~/stage/seq_novembre/data/variantCalling2")
 
   library(dplyr)
   library(ggplot2)
@@ -511,11 +511,11 @@ On crée la table en question avec :
       theme_minimal(base_family = "Courier") +
       ## scale_y_tufte() +
       scale_x_continuous(breaks = seq(1, 734, 30)) +
-      scale_fill_brewer(palette = "Set1") +
+      scale_fill_brewer(palette = "Set2", name = "Type de gène\nsynthétique") +
       xlab("Distribution des SNP sur le gene sauvage") +
       ylab("") +
       theme(panel.ontop = TRUE,
-            legend.position = c(0.2, 0.6),
+            legend.position = c(0.8, 0.8),
             axis.text = element_text(size = 8, colour = "gray"),
             panel.grid.major.x = element_blank(),
             panel.grid.minor.x = element_blank(),
@@ -568,7 +568,7 @@ On crée la table en question avec :
       xlab("Distribution des SNP sur le gene sauvage") +
       ylab("") +
       theme(panel.ontop = TRUE,
-            legend.position = c(0.6, 0.6),
+            legend.position = c(0.4, 0.8),
             axis.text = element_text(size = 8, colour = "gray"),
             panel.grid.major.x = element_blank(),
             panel.grid.minor.x = element_blank(),
@@ -589,7 +589,7 @@ On crée la table en question avec :
       xlab("Distribution des SNP sur le gene sauvage") +
       ylab("") +
       theme(panel.ontop = TRUE,
-            legend.position = c(0.6, 0.6),
+            legend.position = c(0.47, 0.6),
             axis.text = element_text(size = 8, colour = "gray"),
             panel.grid.major.x = element_blank(),
             panel.grid.minor.x = element_blank(),
@@ -632,7 +632,7 @@ On crée la table en question avec :
   ##==============================================================================
   snp_data %>%
       group_by(name, mutation_type) %>%
-      summarise(switch_pos = min(offset_on_subject)) ->
+      summarise(switch_pos = max(offset_on_subject)) ->
       switch_data_muttype
 
   ## la position de switch sans tenir compte de la qualité des mutants
@@ -642,13 +642,15 @@ On crée la table en question avec :
       xlab("") +
       ylab("") +
       annotate("rect", xmin = 160, xmax = 260, ymin = 0, ymax = 10, alpha = 0.4) + 
-      annotate("text", x = 220, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
-      annotate("rect", xmin = 480, xmax = 620, ymin = 0, ymax = 10, alpha = 0.4) + 
-      annotate("text", x = 550, y = 13, label = "coldspot?", size = 2,  alpha = 0.5) + 
+      annotate("text", x = 220, y = 13, label = "coldspot?", size = 8,  alpha = 0.5) + 
+      annotate("rect", xmin = 480, xmax = 580, ymin = 0, ymax = 10, alpha = 0.4) + 
+      annotate("text", x = 550, y = 13, label = "coldspot?", size = 8,  alpha = 0.5) + 
       mytheme
   switch_position_globale
-  ggsave(switch_position_globale, file = "../../analysis/switch_position_globale.pdf",
-         height = 4, width = 7, units = "cm")
+  ggsave(switch_position_globale,
+         file = "../../analysis/switch_position_globale.pdf",
+         height = 5.8, width = 8.3, units = "in")
+
 
   ## en tenant compte du type de mutation
   switch_pos_by_muttype <- ggplot(switch_data_muttype, aes(switch_pos)) +
@@ -657,16 +659,16 @@ On crée la table en question avec :
                      binwidth = 10) +
       scale_x_continuous(breaks = seq(1, 734, 30)) +
       theme_minimal(base_family = "Courier") +
-      scale_fill_discrete() +
+      scale_fill_brewer(palette = "Set2") +
       xlab("Distribution de la qualite de la premiere substitution") +
       ylab("") +
-      theme(legend.position = c(0.8, 0.7)) +
+      theme(legend.position = c(0.6, 0.7)) +
       mytheme
   switch_pos_by_muttype
   ## en tenant compte du type de mutant
   snp_data %>%
       group_by(name, mutant) %>%
-      summarise(switch_pos = min(offset_on_subject)) ->
+      summarise(switch_pos = max(offset_on_subject)) ->
       switch_data_mutant
   switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
       geom_histogram(aes(fill = mutant),
@@ -675,10 +677,10 @@ On crée la table en question avec :
       ## facet_grid(.~mutant) +
       scale_x_continuous(breaks = seq(1, 734, 30)) +
       theme_minimal(base_family = "Courier") +
-      scale_fill_discrete() +
+      scale_fill_brewer(palette = "Set2") +
       xlab("Distribution de la position de switch en fonction du type de mutant") +
       ylab("") +
-      theme(legend.position = c(0.8, 0.5)) +
+      theme(legend.position = c(0.7, 0.5)) +
       mytheme
   switch_pos_by_mutant
   multi_switch_plot <- plot_grid(switch_pos_by_muttype, switch_pos_by_mutant, ncol = 1, labels = c("A", "B"))
@@ -690,7 +692,7 @@ On crée la table en question avec :
   ##==============================================================================
   snp_data %>%
       group_by(name, mutant) %>%
-      summarise(switch_pos = max(offset_on_subject)) ->
+      summarise(switch_pos = min(offset_on_subject)) ->
       end_data_mutant
 
   pdf(file = "../../analysis/end_switch.pdf", width = 4, height = 4)
@@ -701,7 +703,7 @@ On crée la table en question avec :
                      binwidth = 1) +
       theme_minimal() +
       xlab("") + ylab("") +
-      theme(legend.position = c(0.4, 0.5)) +
+      theme(legend.position = c(0.8, 0.5)) +
       mytheme
   )
   dev.off()
@@ -741,10 +743,21 @@ On crée la table en question avec :
       xlab("") + ylab("") +
       scale_fill_brewer(palette = "Set2",
                         labels = c("S -> W", "W -> S")) +
-      theme(legend.position = c(0.2, 0.7),
+      theme(legend.position = c(0.8, 0.7),
             legend.title = element_blank(),
             legend.text = element_text(size = 10)) +
       mytheme 
+  dev.off()
+
+  pdf(file = "../../analysis/strong_vs_weak.pdf", width = 4, height = 4)
+  snp_data %>%
+      ggplot(aes(offset_on_subject, fill = mutation_type)) +
+      geom_histogram(binwidth = 10) +
+      facet_grid(mutation_type ~ .) +
+      xlab("") + ylab("") +
+      theme_minimal(base_family = "Courier") +
+      scale_fill_brewer(palette = "Set2", guide = FALSE) +
+      mytheme
   dev.off()
 
 #+END_SRC
