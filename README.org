@@ -32,7 +32,7 @@ tree ./ -L 2
 |          | -- fasta                                | dossier contenant les séquences une à une                                   |
 |          | -- fastq                                | idem en fastq                                                               |
 |          | -- id_table.dat                         | une table contenant les nom de séquence, le mutant, et la qualité du mutant |
-|          | -- raw_seq_nvbr                         | le dossier contenant les données brutes                                     |
+|          | -- raw_seq_nvbr                         | le dossier contenant les données brutes. NEPASTOUCHER                       |
 |          | -- reference.fasta                      | la séquence de référence                                                    |
 |          | -- refseq.fasta                         | idem                                                                        |
 |          | -- refseq_reverse.fasta                 | la séquence de référence reversed.                                          |
@@ -122,80 +122,82 @@ Le rapport était basé sur une version de ma fonction =mutant_caller= dans le
 script R [[./scripts/variant_analysis.R]] qui était fausse. Très fausse. Beaucoup de
 boulot à corriger. 
 
-* data
-** raw_seq_nvbr
-Contient les deux dataset au format .zip. DO NOT TOUCH.
-** extraction des données
-Pour extraire les données du fichier brut .zip à la structure de données.
-
-#+BEGIN_SRC sh :tangle ./scripts/extract_raw_data.sh 
-  #!/bin/bash 
-
-  # Le script qui extrait les données depuis les fichiers zip bruts et qui met en
-  # place la structure de fichier.
-
-  cd ./data # à modifier en cd ../data quand dans dossier `scripts'
-  # extraction des données brutes
-  unzip raw_seq_nvbr/1369607.zip
-  unzip raw_seq_nvbr/1369628.zip
-  # déplace tout les fichiers dans des dossiers adaptés 
-  find . -name "*.fas" -exec mv -i {} -t ./fasta/ \;
-  find . -name "*.ab1" -exec mv -i {} -t ./spectrograms/ \;
-  find . -name "*.seq" -exec mv -i {} -t ./seq/ \;
-  # déplace le contenu du dossier inutile dans le présent dossier
-  mv 1369628/* ./
-  rm -r 1369628 # supprime le dossier
-
-  ##
-  ## supprime fichiers mauvaise qualité
-  ##
-  # absence de données dans pS6-1073.fas
-  # on repart des données de .ab1
-  rm ./fasta/*.fas
-
-  ##
-  ## combine tout les fasta en 1
-  ##
-  if [ -f all.fasta ]
-  then
-      rm all.fasta
-      echo "Cleaning old files"
-      touch all.fasta
-  else
-      touch all.fasta
-  fi
-
-  cat ../data/fasta/*.fst >> ../data/all.fasta
-#+END_SRC
 * analysis 
 Contient les résultats des analyses. Graphes ou données transformées. 
 * scripts 
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
-** Analyses préliminaires des csv 
-#+BEGIN_SRC R :tangle ./scripts/exploratory_analysis.R 
-  library(dplyr)
-  library(ggplot2)
+** Extraction des données brutes
+Pour extraire les données du fichier brut .zip à la structure de données.
 
-  read_result <- function(filename){
-    readr::read_delim(filename, delim = ";")
-  }
+#+BEGIN_SRC sh :tangle ./scripts/extract_raw_data.sh 
+  #!/bin/bash 
 
-  snp_strong   <- read_result("./data/1369628.SNP.csv")
-  snp_weak   <- read_result("./data/1369607.SNP.csv")
-  indel_strong <- read_result("./data/1369628.INDEL.csv")
-  indel_weak <- read_result("./data/1369607.INDEL.csv")
-  snp_weak$mutant <- "weak"
-  snp_strong$mutant <- "strong"
+  cd ~/stage/seq_novembre/
+  # Le script qui extrait les données depuis les fichiers zip bruts et qui met en
+  # place la structure de fichier.
 
+  cd ./data
+  ## extraction des données brutes
+  unzip raw_seq_nvbr/1369607.zip
+  unzip raw_seq_nvbr/1369628.zip
+
+  ## crée les dossiers
+  mkdir fasta seq spectrograms
+  ## déplace tout les fichiers dans des dossiers adaptés 
+  find . -name "*.fas" -exec mv -i {} -t ./fasta/ \;
+  find . -name "*.ab1" -exec mv -i {} -t ./spectrograms/ \;
+  find . -name "*.seq" -exec mv -i {} -t ./seq/ \;
+
+  # déplace le contenu du dossier inutile dans le présent dossier
+  mv 1369628/* ./
+  rm -r 1369628 # supprime le dossier
 #+END_SRC
-** ab1 -> (fastq , fasta)
-*** prérequis
+
+Les spectrogrammes contiennent l'info de la sequence_id et du nom. 
+On construit une table avec la qualité du mutant en troisième colonne. 
+
+#+BEGIN_SRC python :tangle ./scripts/make_id_table.py
+  from Bio import SeqIO
+  import glob
+
+  def strong_or_weak(record):
+      """
+      Détermine si le mutant est strong ou weak
+      """
+      if 'S' in record:
+          return 'strong'
+      else:
+          return 'weak'
+
+  # en-tête de colonne
+  print "id name mutant"
+
+  # pour chaque fichier ab1
+  for file in glob.glob("../data/spectrograms/*.ab1"):
+      with open(file, "rb") as spectro:
+          for record in SeqIO.parse(spectro, "abi"):
+              # associer l'id avec le nom et le type de mutant
+              print record.id + " " + record.name + \
+                  " " + strong_or_weak(record.name)
+#+END_SRC
+
+On crée la table en question via :
 #+BEGIN_SRC sh
-brew install emboss # un gros fichier de 500MB
+  cd ~/stage/seq_novembre/scripts
+  python make_id_table.py > ../data/id_table.dat
 #+END_SRC
+
+** Des spectrogrammes aux données fastq non-trimmées
+*** prérequis
+
+#+BEGIN_SRC sh
+brew install emboss
+#+END_SRC
+
 *** via seqret
+
 #+BEGIN_SRC sh :tangle ./scripts/ab1_to_fastq.sh
   cd ~/stage/seq_novembre/scripts
 
@@ -206,7 +208,7 @@ brew install emboss # un gros fichier de 500MB
   done
 #+END_SRC
 
-** untrimmed.fastq -> trimmed.fastq
+** Des données non-trimmées aux données trimmées et filtrées
 Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./data/trimmed.fastq]]
 
 #+BEGIN_SRC sh :tangle ./scripts/trim_low_quality.sh
@@ -215,463 +217,363 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
   #' -qtrim=rl : quality trim right and left 
   #' -trimq=28 : trim if quality < 28 (sanger encoding, illumina 1.9)
   #' -minlen=620 : keep only seq with length > 620, after trimming.
-  #' -Xmx1g : tells bbduk to use 1G of RAM
+  #' -Xmx1g : tells bbduk / java to use 1G of RAM
 
-  if [[ -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]; then # seulement si les fichiers n'existent pas. 
-      ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
+  if [[ -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]
+  then # si les fichiers n'existent pas.
+      ~/.bin/bbmap/bbduk.sh -Xmx1g \
+                            -in=../data/untrimmed.fastq \
+                            -out=../data/trimmed.fastq \
+                            -qtrim=rl \
+                            -trimq=28 \
+                            -minlen=620
   else
-      rm ../data/trimmed.fastq
-      ./quality_check # assemble tous les fichiers .fastq de novo
-      ~/.bin/bbmap/bbduk.sh -Xmx1g -in=../data/untrimmed.fastq -out=../data/trimmed.fastq qtrim=rl trimq=28 -minlen=620
+      printf "Le fichier untrimmed.fastq n'existe pas, ou le fichier trimmed.fastq n'existe pas."
   fi
-
-  fastqc trimmed.fastq -o ./tmp
-  mv ./tmp/trimmed_fastqc.html ../analysis
 #+END_SRC
-** quality check : analyses fastqc
+
+** Analyse de la qualité des séquences
 Le script utilisé pour analyser les données de qualité via /fastqc/. 
 
-#+BEGIN_SRC sh :tangle scripts/quality_check
+#+BEGIN_SRC sh :tangle scripts/quality_check.sh
   #!/usr/local/bin/bash
+  cd ~/stage/seq_novembre/scripts
+
   # quand dans le dossier ./scripts
   cd ../data/
 
-  if [ -f untrimmed.fastq ]; then # si le dossier tmp existe
-      rm untrimmed.fastq
-      cat fastq/*.fastq > untrimmed.fastq
+  if [ -f untrimmed.fastq && -f trimmed.fastq ]; then # si le dossier tmp existe
+      # analyse les données et output dans tmp
+      fastqc untrimmed.fastq -o ./tmp
+      fastqc trimmed.fastq   -o ./tmp
+      # unzip resulting files
+      unzip -qq tmp/untrimmed_fastqc.zip -d tmp
+      unzip -qq tmp/trimmed_fastqc.zip -d tmp
+      # extract main results
+      mv tmp/untrimmed_fastqc/Images/per_base_quality.png \
+         ../analysis/per_base_quality_fastqc_untrimmed.png
+      mv tmp/trimmed_fastqc/Images/per_base_quality.png \
+         ../analysis/per_base_quality_fastqc_trimmed.png
+      # copy html into analysis
+      mv tmp/*.html ../analysis/
+      # delete tmp files
+      rm -r tmp # remove temporary files
+
   else
-      cat fastq/*.fastq > untrimmed.fastq
+      printf "Les fichiers untrimmed.fastq et trimmed.fastq n'existent pas."
   fi
-
-  fastqc untrimmed.fastq -o ./tmp # analyse les données et output dans tmp
-  mv ./tmp/untrimmed_fastqc.html ../analysis/ # déplace dans le dossier résultat.
 #+END_SRC 
-** variant calling
 
-#+name: Prérequis
-#+BEGIN_SRC sh
-  brew tap homebrew/homebrew-science
-  brew update
-  brew install samtools bamtools bcftools bwa
-#+END_SRC
-
-Clairement pas la bonne façon de s'y prendre. 
-#+BEGIN_SRC sh :tangle ./scripts/variantCallerBwa.sh
-  #!/bin/bash
-
-  # le but est de déterminer les SNP
-  # le workflow suivi est celui décrit là http://www.htslib.org/workflow/. 
-
-  ## working dir
-  cd ../data
-  mkdir variantCalling
-
-  ## utilise le reverse complement de la séquence de référence
-  fastx_reverse_complement -i refseq.fasta -o refseq_reverse.fasta
-  cp refseq_reverse.fasta variantCalling/
-  cp trimmed.fastq variantCalling/
-
-  cd variantCalling
-  # renome en utilisant un nom plus simple
-  mv refseq_reverse.fasta reference.fasta
-  ## indexation du fichier référence
-  bwa index reference.fasta
-  # alignement au fichier de reference
-  #' * aln : align
-  #' * mem : algo bwa-mem, more accurate with reads > 100bp. 
-  #' * reference.fasta : reference sequence
-  #' * trimmed.fastq : sequence trimmee.
-  #' * aln_sa.sai : fichier aligné indexé
-  bwa mem reference.fasta trimmed.fastq > align.sam
-
-  ## sort from name order to coordinate order
-  #' * sort : sorting algorithm
-  #' * -O bam : output to bam
-  #' * -o align.bam : name of output
-  #' * -T ./tmp/align_temp : name of temp file
-  #' * align.sam : fichier en entrée
-  mkdir tmp
-  samtools sort -O bam -o align.bam -T ./tmp/align_temp align.sam
-
-  ## conversion au format sam
-  #' * samse : sam singled end
-  #' * reference.fasta : reference sequence
-  #' * aln_sa.sai : alignement indexé
-  # bwa samse reference.fasta aln_sa.sai trimmed.fastq > aln.sam
-
-  ## variant calling
-  #'
-  #'
-  samtools mpileup -ugf reference.fasta align.bam | \
-      bcftools call -vmO z -o study.vcf.gz
-
-  ## indexation du VCF
-  tabix -p vcf study.vcf.gz
-
-  ## graphes et statistiques
-  bcftools stats -F reference.fasta -s - study.vcf.gz > study.vcf.gz.stats
-  mkdir plots
-  plot-vcfstats -p plots/ study.vcf.gz.stats
-  ## déplace dans le dossier analyses
-  cp -r plots ../../analysis/
-#+END_SRC
+** Détermination des SNP
 
 #+BEGIN_SRC sh :tangle ./scripts/variantCallerSsaha2.sh
   #!/bin/bash
-
+  cd ~/stage/seq_novembre/scripts
   # variant calling using ssaha2 and ssaha2SNP
 
-  cd ../data/variantCalling
-  cp ../trimmed.fastq .
-  ln -s ../refseq_reverse.fasta ./reference.fasta
+  cd ../data
+
+  ## prend le reverse complement de la séquence de référence
+  fastx_reverse_complement -i reference.fasta -o reference_reverse.fasta
+
+  mkdir variantCalling
+  cd variantCalling
+
+  ## place les séquences nécessaires pour l'analyse dans le dossier. 
+  ln -s ../trimmed.fastq .
+  ln -s ../reference_reverse.fasta ./reference_reverse.fasta
+
   ## alignement à la séquence de référence
-  #' * -output psl : format de sortie psl
-  #' * reference.fasta : séquence de référence
-  #' * trimmed.fastq : séquence à aligner
-  #' * output.psl : fichier de sortie
-  ~/.bin/ssahaSNP/ssaha2 -output psl reference.fasta trimmed.fastq > output.psl
+  #' -output psl :             format de sortie psl
+  #' reference_reverse.fasta : séquence de référence
+  #' trimmed.fastq :           séquence à aligner
+  #' output.psl :              fichier de sortie
+  ~/.bin/ssahaSNP/ssaha2 -output psl reference_reverse.fasta trimmed.fastq > output.psl
 
   ## polymorphism detection tool
-  ~/.bin/ssahaSNP/ssaahaSNP reference.fasta trimmed.fastq > SNP.txt
+  ~/.bin/ssahaSNP/ssaahaSNP reference_reverse.fasta trimmed.fastq > SNP.txt
 
   ## computer readable format conversion
-  egrep ssaha:SNP SNP.txt | awk '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15}' >  SNP.dat
+  # egrep trouve les lignes où sont indiquées les données concernant les SNP
+  # awk extrait les champs en question dans un fichier SNP.dat
+  egrep ssaha:SNP SNP.txt | \
+      awk '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15}' > SNP.dat
 
-  ## column annotation based on ftp://ftp.sanger.ac.uk/pub/resources/software/ssahasnp/readme,
+  ## column annotation based on
+  ## ftp://ftp.sanger.ac.uk/pub/resources/software/ssahasnp/readme,
   ## part (6) some further information
+  # la première ligne du fichier .dat, afin d'être lu dans R
   echo " match subject_name index_of_subject read_name s_base q_base s_qual q_qual offset_on_subject offset_on_read length_of_snp start_match_of_read end_match_of_read match_direction length_of_subject " > head.dat
   # into final document
   cat head.dat SNP.dat > snp_calling.dat
 #+END_SRC
 
-** variant analysis
+** Analyse des variants
 
-*** make id - query table
-Les spectrogrammes contiennent l'info de la sequence_id et du nom. 
-On construit une table avec la qualité du mutant en troisième colonne. 
-#+BEGIN_SRC python :tangle ./scripts/make_id_table.py
-  from Bio import SeqIO
-  import glob
+*** Lecture des données et nettoyage
+Le fichier [[~/stage/seq_novembre/data/variantCalling/snp_calling.dat]] contient les
+données d'intérêt. Il ne contient ni le nom du transformant, ni son type (Weak
+ou Strong). Les données sont récupérées dans le fichier [[data/id_table.dat]]. Les
+deux tables sont associés via un /inner_join/. 
 
-  def mutant_qualifier(record):
-      if 'S' in record:
-          return 'strong'
-      else:
-          return 'weak'
-
-  print "id name mutant"
-  for file in glob.glob("../data/spectrograms/*.ab1"):
-      with open(file, "rb") as spectro:
-          for record in SeqIO.parse(spectro, "abi"):
-              print record.id + " " + record.name + \
-                  " " + mutant_qualifier(record.name)
-#+END_SRC
-
-On crée la table en question avec :
-#+BEGIN_SRC sh
-  cd ./scripts/
-  python make_id_table.py > ../data/id_table.dat
-#+END_SRC
-
-*** analysis
+#+name: lecture
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
   setwd("~/stage/seq_novembre/data/variantCalling2")
 
-    library(dplyr)
-    library(ggplot2)
-    library(extrafont)
-    library(ggthemes)
-    library(cowplot)
+  library(dplyr)
 
-    ##
+  mytheme <- theme(panel.ontop = TRUE,
+                   axis.text = element_text(size = 8, colour = "gray"),
+                   panel.grid.major.x = element_blank(),
+                   panel.grid.minor.x = element_blank(),
+                   panel.grid.minor.y = element_blank(),
+                   panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
-    mytheme <- theme(panel.ontop = TRUE,
-                     axis.text = element_text(size = 8, colour = "gray"),
-                     panel.grid.major.x = element_blank(),
-                     panel.grid.minor.x = element_blank(),
-                     panel.grid.minor.y = element_blank(),
-                     panel.grid.major.y = element_line(colour = "white", size = 1)) 
+  ## read the data
+  snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
+  ## enlève les colonnes inutiles
+  snp %>%
+      select( -match, -subject_name, -index_of_subject, -length_of_subject,
+             -match_direction) ->
+      snp
+  ## lit les métadonnées de séquence
+  id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
 
-    ## read the data
-    snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
-    ## enlève les colonnes inutiles
-    snp %>%
-        select( -match, -subject_name, -index_of_subject, -length_of_subject,
-               -match_direction) ->
-        snp
-    ## lit les métadonnées de séquence
-    id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
+  ## fait correspondre le read_name avec le nom du clone et le type de mutant W ou S
+  snp_data <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
+#+END_SRC
 
-    ## fait correspondre le read_name avec le nom du clone et le type de mutant W ou S
-    snp_data <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
+*** Détermine la qualité des SNP
+Pour déterminer si le SNP est de type /weak/ ou /strong/, j'utilise la fonction
+=mutant_caller=. Si la référence est A ou T, soit le transformant est C ou G, et
+la substitution est /WS/ ; soit le transformant est A ou T, et la mutation est
+/WW/. Si la référence est C ou G, soit le transformant est A ou T, et la
+substitution est /SW/ ; soit le transformant est G ou C, la substitution et est
+/SS/.
 
-    ##==============================================================================
-    ## PLOT DISTRIBUTIONS
-    ##==============================================================================
-    snp_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
-        geom_density(aes(fill = mutant), alpha = 0.2) +
-        geom_histogram(aes(fill = mutant),
-                       binwidth = 10, position = "dodge") +
-        theme_minimal(base_family = "Courier") +
-        ## scale_y_tufte() +
-        scale_x_continuous(breaks = seq(1, 734, 30)) +
-        scale_fill_brewer(palette = "Set2", name = "Type de gène\nsynthétique") +
-        xlab("Distribution des SNP sur le gene sauvage") +
-        ylab("") +
-        theme(panel.ontop = TRUE,
-              legend.position = c(0.8, 0.8),
-              axis.text = element_text(size = 8, colour = "gray"),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor.x = element_blank(),
-              panel.grid.minor.y = element_blank(),
-              panel.grid.major.y = element_line(colour = "white", size = 1)) 
-
-
-    #' une fonction pour déterminer si la substitution est strong ou weak. On peut
-    #' avoir des substitutions weak chez les strongs
-    #' @param subject la base sur la séquence de référence
-    #' @param query la base sur le read.
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  #' une fonction pour déterminer si la substitution est strong ou weak. On peut
+  #' avoir des substitutions weak chez les strongs
+  #' @param subject la base sur la séquence de référence
+  #' @param query la base sur le read.
   mutant_caller <- function(subject, query)
   {
       if (subject == 'A' || subject == 'T') {
           if (query == 'C' || query == 'G' ) {
-              'strong'
+              'WS'
           } else {
-              'weak'
+              'WW'
           }
       } else if (subject == 'C' || subject == 'G') {
           if (query == 'A' || query == 'T') {
-              'weak'
+              'SW'
           } else {
-              'strong'
+              'SS'
           }
       }
   }
 
-    ## on applique la fonction rowwise, ie ligne par ligne, via `mutate`, puis on
-    ## dégroupe.
-    snp_data %>%
-        rowwise() %>%
-        mutate(mutation_type = mutant_caller(s_base, q_base)) %>%
-        ungroup() ->
-        snp_data
-    ## conversion en facteur
-    snp_data$mutation_type = factor(snp_data$mutation_type)
+  ## on applique la fonction rowwise, ie ligne par ligne, via `mutate`, puis on
+  ## dégroupe.
+  snp_data %>%
+      rowwise() %>%
+      mutate(mutation_type = mutant_caller(s_base, q_base)) %>%
+      ungroup() ->
+      snp_data
+  ## conversion en facteur
+  snp_data$mutation_type = factor(snp_data$mutation_type)
+#+END_SRC
 
+*** Graphiques globaux
+Des graphiques de distribution globale des SNP sont fait ici. 
 
-    ## distribution des SNP
-    ## facétée par type de mutant, couleur = type de mutation
-    mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
-        geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
-        facet_grid(~mutant, labeller = label_both) +
-        theme_minimal(base_family = "Courier") +
-        ## scale_y_tufte() +
-        scale_x_continuous(breaks = seq(1, 734, 60)) +
-        scale_fill_brewer(palette = "Set2",
-                          name = "Type de mutation",
-                          labels = c("AT -> GC", "GC -> AT")) +
-        xlab("Distribution des SNP sur le gene sauvage") +
-        ylab("") +
-        theme(panel.ontop = TRUE,
-              legend.position = c(0.4, 0.8),
-              axis.text = element_text(size = 8, colour = "gray"),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor.x = element_blank(),
-              panel.grid.minor.y = element_blank(),
-              panel.grid.major.y = element_line(colour = "white", size = 1)) 
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  library(ggplot2)
+  library(extrafont)
+  library(ggthemes)
+  library(cowplot)
 
-    ## distribution des SNP
-    ## facetée par type de mutation, couleur : type de mutant. 
-    muttype_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
-        geom_histogram(aes(fill = mutant), binwidth = 10, position = "dodge") +
-        facet_grid(~mutation_type, labeller = label_both) +
-        theme_minimal(base_family = "Courier") +
-        ## scale_y_tufte() +
-        scale_x_continuous(breaks = seq(1, 734, 60)) +
-        scale_fill_brewer(palette = "Set2",
-                          name = "Type de mutant",
-                          labels = c("mutant strong", "mutant weak")) +
-        xlab("Distribution des SNP sur le gene sauvage") +
-        ylab("") +
-        theme(panel.ontop = TRUE,
-              legend.position = c(0.47, 0.6),
-              axis.text = element_text(size = 8, colour = "gray"),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor.x = element_blank(),
-              panel.grid.minor.y = element_blank(),
-              panel.grid.major.y = element_line(colour = "white", size = 1)) 
+  ##==============================================================================
+  ## PLOT DISTRIBUTIONS
+  ##==============================================================================
+  snp_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
+      geom_density(aes(fill = mutant), alpha = 0.2) +
+      geom_histogram(aes(fill = mutant),
+                     binwidth = 10, position = "dodge") +
+      theme_minimal(base_family = "Courier") +
+      scale_x_continuous(breaks = seq(1, 734, 30)) +
+      scale_fill_brewer(palette = "Set2", name = "Type de gène\nsynthétique") +
+      xlab("Distribution des SNP sur le gene sauvage") +
+      ylab("") +
+      theme(panel.ontop = TRUE,
+            legend.position = c(0.8, 0.8),
+            axis.text = element_text(size = 8, colour = "gray"),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
-    ##==============================================================================
-    ## SAVE PLOTS
-    ##==============================================================================
-    save_to_a5 <- function(output_file, plot)
-    {
-        pdf(file = output_file, height = 5.8, width = 8.3)
-        print(plot)
-        dev.off()
-    }
+  ## distribution des SNP
+  ## facétée par type de mutant, couleur = type de mutation
+  mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
+      geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
+      facet_grid(~mutant, labeller = label_both) +
+      theme_minimal(base_family = "Courier") +
+      scale_x_continuous(breaks = seq(1, 734, 60)) +
+      scale_fill_brewer(palette = "Set2",
+                        name = "Type de mutation",
+                        labels = c("AT -> GC", "GC -> AT")) +
+      xlab("Distribution des SNP sur le gene sauvage") +
+      ylab("") +
+      theme(panel.ontop = TRUE,
+            legend.position = c(0.4, 0.8),
+            axis.text = element_text(size = 8, colour = "gray"),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
-    save_to_a3 <- function(output_file, plot)
-    {
-                                            # a3 dimensions : 11.69in x 16.53in
-        pdf(file = output_file, height = 11.69, width = 16.53)
-        print(plot)
-        dev.off()
-    }
+  ##==============================================================================
+  ## SAVE PLOTS
+  ##==============================================================================
+  save_to_a5 <- function(output_file, plot)
+  {
+      pdf(file = output_file, height = 5.8, width = 8.3)
+      print(plot)
+      dev.off()
+  }
 
-    save_to_a5(output_file = "../../analysis/substitution_distribution.pdf",
-               plot = mutation_plot)
-    save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
-               plot = snp_plot)
-    save_to_a5(output_file = "../../analysis/muttype_plot.pdf",
-               plot = muttype_plot)
+  save_to_a3 <- function(output_file, plot)
+  {
+                                          # a3 dimensions : 11.69in x 16.53in
+      pdf(file = output_file, height = 11.69, width = 16.53)
+      print(plot)
+      dev.off()
+  }
 
-    multi_plot <- plot_grid(snp_plot, mutation_plot, NULL, muttype_plot, ncol = 2, labels = c("A", "B", " ", "C"))
+  save_to_a5(output_file = "../../analysis/substitution_distribution.pdf",
+             plot = mutation_plot)
+  save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
+             plot = snp_plot)
+  save_to_a5(output_file = "../../analysis/muttype_plot.pdf",
+             plot = muttype_plot)
 
-    pdf(file = "../../analysis/snp_resume.pdf", height = 11.69, width = 16.53)
-    multi_plot
-    dev.off()
+#+END_SRC
 
-    ##==============================================================================
-    ## SWITCH INITIAL
-    ##==============================================================================
-    snp_data %>%
-        group_by(name, mutation_type) %>%
-        summarise(switch_pos = max(offset_on_subject)) ->
-        switch_data_muttype
+*** Positions terminales de switch
+On veut ici analyser les positions terminales de SNP. C'est à dire à quel
+endroit on bascule à nouveau sur le génotype sauvage. 
 
-    ## la position de switch sans tenir compte de la qualité des mutants
-    switch_position_globale <- ggplot(switch_data_muttype, aes(switch_pos)) +
-        geom_histogram(fill = "black", binwidth = 5) +
-        theme_minimal(base_family = "Courier") +
-        xlab("") +
-        ylab("") +
-        annotate("rect", xmin = 160, xmax = 260, ymin = 0, ymax = 10, alpha = 0.4) + 
-        annotate("text", x = 220, y = 13, label = "coldspot?", size = 8,  alpha = 0.5) + 
-        annotate("rect", xmin = 480, xmax = 580, ymin = 0, ymax = 10, alpha = 0.4) + 
-        annotate("text", x = 550, y = 13, label = "coldspot?", size = 8,  alpha = 0.5) + 
-        mytheme
-    switch_position_globale
-    ggsave(switch_position_globale,
-           file = "../../analysis/switch_position_globale.pdf",
-           height = 5.8, width = 8.3, units = "in")
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  ##==============================================================================
+  ## SWITCH INITIAL
+  ##==============================================================================
 
+  ## en tenant compte du type de mutant
+  snp_data %>%
+      group_by(name, mutant) %>%
+      summarise(switch_pos = max(offset_on_subject)) ->
+      switch_data_mutant
 
-    ## en tenant compte du type de mutation
-    switch_pos_by_muttype <- ggplot(switch_data_muttype, aes(switch_pos)) +
-        geom_histogram(aes(fill = mutation_type),
-                       position = "dodge", 
-                       binwidth = 10) +
-        scale_x_continuous(breaks = seq(1, 734, 30)) +
-        theme_minimal(base_family = "Courier") +
-        scale_fill_brewer(palette = "Set2") +
-        xlab("Distribution de la qualite de la premiere substitution") +
-        ylab("") +
-        theme(legend.position = c(0.6, 0.7)) +
-        mytheme
-    switch_pos_by_muttype
-    ## en tenant compte du type de mutant
-    snp_data %>%
-        group_by(name, mutant) %>%
-        summarise(switch_pos = max(offset_on_subject)) ->
-        switch_data_mutant
-    switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
-        geom_histogram(aes(fill = mutant),
-                       position = "dodge", 
-                       binwidth = 10) +
-        ## facet_grid(.~mutant) +
-        scale_x_continuous(breaks = seq(1, 734, 30)) +
-        theme_minimal(base_family = "Courier") +
-        scale_fill_brewer(palette = "Set2") +
-        xlab("Distribution de la position de switch en fonction du type de mutant") +
-        ylab("") +
-        theme(legend.position = c(0.7, 0.5)) +
-        mytheme
-    switch_pos_by_mutant
-    multi_switch_plot <- plot_grid(switch_pos_by_muttype, switch_pos_by_mutant, ncol = 1, labels = c("A", "B"))
-    ggsave(multi_switch_plot, file = "../../analysis/switch_pos_by_mutant.pdf",
-           height = 21, width = 29.7, units = "cm")
+  switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
+      geom_histogram(aes(fill = mutant),
+                     position = "dodge", 
+                     binwidth = 10) +
+      ## facet_grid(.~mutant) +
+      scale_x_continuous(breaks = seq(1, 734, 30)) +
+      theme_minimal(base_family = "Courier") +
+      scale_fill_brewer(palette = "Set2") +
+      xlab("Distribution de la position de switch en fonction du type de mutant") +
+      ylab("") +
+      theme(legend.position = c(0.7, 0.5)) +
+      mytheme
 
-    ##==============================================================================
-    ## SWITCH TERMINAL
-    ##==============================================================================
-    snp_data %>%
-        group_by(name, mutant) %>%
-        summarise(switch_pos = min(offset_on_subject)) ->
-        end_data_mutant
+  ## sauvegarde du graphique
+  ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
+         height = 21, width = 29.7, units = "cm")
 
-    pdf(file = "../../analysis/end_switch.pdf", width = 4, height = 4)
-    print(
-        ggplot(end_data_mutant, aes(switch_pos)) +
-        geom_histogram(aes(fill = mutant),
-                       position = "dodge",
-                       binwidth = 1) +
-        theme_minimal() +
-        xlab("") + ylab("") +
-        theme(legend.position = c(0.8, 0.5)) +
-        mytheme
-    )
-    dev.off()
+         #+END_SRC
 
-    ##============================================================================== 
-    ## OUTLIERS
-    ##==============================================================================
+*** SNP inattendus
+Le but est de trouver les SNPs aux positions calibrées qui ne sont pas ceux
+attendus. Typiquement ce sont les mutations /strong/ dans la manip Weak, et les
+mutations /weak/ dans la manip Strong. Si les mutations en questions sont
+répétées sur l'ensemble du clone, alors c'est une contamination. Sinon, ce sont
+des données intéressantes. 
 
-    #' find_outlier
-    #' ============
-    #' une fonction qui détermine si le SNP en question est un outlier ou nom, c'est
-    #' à dire une mutation strong chez un mutant weak ou inversement.
-    #' @param mutant : le type de mutant
-    #' @param mutation_type : le type de substitution
-    find_outlier <- function(mutant, mutation_type)
-    {
-        if (mutant == 'strong' && mutation_type == 'weak') {
-            'strong_weak'
-        } else if (mutant == 'weak' && mutation_type == 'strong') {
-            'weak_strong'
-        } else {
-            'attendu'
-        }
-    }
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  ##============================================================================== 
+  ## OUTLIERS
+  ##==============================================================================
 
-    snp_data %>%
-        rowwise() %>%
-        mutate(outlier = find_outlier(mutant, mutation_type)) %>%
-        ungroup() ->
-        outlier_data
+  #' Détermine si le SNP en question est un outlier ou non, c'est
+  #' à dire une mutation strong chez un mutant weak ou inversement.
+  #' @param mutant : le type de mutant
+  #' @param mutation_type : le type de substitution
+  find_outlier <- function(mutant, mutation_type)
+  {
+      if (mutant == 'strong' && mutation_type == 'weak') {
+          'strong_weak'
+      } else if (mutant == 'weak' && mutation_type == 'strong') {
+          'weak_strong'
+      } else {
+          'attendu'
+      }
+  }
 
-    pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
-    outlier_data %>%
-        filter(outlier != "attendu") %>%
-        qplot(data = ., offset_on_subject, fill = outlier, binwidth = 10) +
-        theme_minimal(base_family = "Courier") +
-        xlab("") + ylab("") +
-        scale_fill_brewer(palette = "Set2",
-                          labels = c("S -> W", "W -> S")) +
-        theme(legend.position = c(0.8, 0.7),
-              legend.title = element_blank(),
-              legend.text = element_text(size = 10)) +
-        mytheme 
-    dev.off()
+  snp_data %>%
+      rowwise() %>%
+      mutate(outlier = find_outlier(mutant, mutation_type)) %>%
+      ungroup() ->
+      outlier_data
 
-    pdf(file = "../../analysis/strong_vs_weak.pdf", width = 4, height = 4)
-    snp_data %>%
-        ggplot(aes(offset_on_subject, fill = mutation_type)) +
-        geom_histogram(binwidth = 10) +
-        facet_grid(mutation_type ~ .) +
-        xlab("") + ylab("") +
-        theme_minimal(base_family = "Courier") +
-        scale_fill_brewer(palette = "Set2", guide = FALSE) +
-        mytheme
-    dev.off()
+  pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
+  outlier_data %>%
+      filter(outlier != "attendu") %>%
+      qplot(data = ., offset_on_subject, fill = outlier, binwidth = 10) +
+      theme_minimal(base_family = "Courier") +
+      xlab("") + ylab("") +
+      scale_fill_brewer(palette = "Set2",
+                        labels = c("S -> W", "W -> S")) +
+      theme(legend.position = c(0.8, 0.7),
+            legend.title = element_blank(),
+            legend.text = element_text(size = 10)) +
+      mytheme 
+  dev.off()
+
+  pdf(file = "../../analysis/strong_vs_weak.pdf", width = 4, height = 4)
+  snp_data %>%
+      ggplot(aes(offset_on_subject, fill = mutation_type)) +
+      geom_histogram(binwidth = 10) +
+      facet_grid(mutation_type ~ .) +
+      xlab("") + ylab("") +
+      theme_minimal(base_family = "Courier") +
+      scale_fill_brewer(palette = "Set2", guide = FALSE) +
+      mytheme
+  dev.off()
 
 #+END_SRC
 
 * Script principal 
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
-cd ~/stage/seq_novembre/scripts
+  cd ~/stage/seq_novembre/scripts
 
-./extract_raw_data # extrait les données des .zip et organise en sous fichiers
-./ab1_to_fastq.sh  # extrait les fastq et fasta depuis les .ab1 
-./trim_low_quality.sh # supprime les données de faible qualité et transforme les bases de qualité inférieure à 28 en N
+  chmod +x *.sh
+
+  ./extract_raw_data                             # extrait les données des .zip et
+                                                 # organise en sous fichiers
+  ./ab1_to_fastq.sh                              # extrait les fastq et fasta
+                                                 # depuis les .ab1
+  ./trim_low_quality.sh                          # supprime les données de faible
+                                                 # qualité et transforme les bases
+                                                 # de qualité inférieure à 28 en N
+  ./quality_check.sh                             # analyse fastqc, crée les
+                                                 # graphes en png et sortie des
+                                                 # html dans le dossier analysis
+  python make_id_table.py > ../data/id_table.dat # crée la table d'association des
+                                                 # identifiants de séquence avec
+                                                 # le nom des clones
+  Rscript variant_analysis.R                     # analyses et graphiques dans ce
+                                                 # script
 #+END_SRC
+
