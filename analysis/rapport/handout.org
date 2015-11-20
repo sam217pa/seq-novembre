@@ -32,7 +32,21 @@ toutes les séquences qui avaient une longueur inférieure à $620$ étaient
 généralement mal alignées. Elles ont été éliminées de l'analyse. 
 
 ** Présence de contaminations ?
-Pas évident à déterminer : voir après. 
+*** dans la manip Strong
+
+|           | *SNP weak* |
+|-----------+------------|
+| <c>       | <c>        |
+| pS10-1073 | 1          |
+| pS16-1073 | 1          |
+| pS60-1073 | 22         |
+| pS74-1073 | 1          |
+| pS82-1073 | 1          |
+| pS83-1073 | 21         |
+| pS88-1073 | 1          |
+| pS91-1073 | 22         |
+| pS92-1073 | 22         |
+
 ** Observations générales
 
 #+attr_latex: :font \small
@@ -249,3 +263,4 @@ distribué de la même façon, que le gène synthétique soit Strong ou Weak.
   \label{figvincent}
 \end{marginfigure}
 #+END_LaTeX
+
