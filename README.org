@@ -5,7 +5,7 @@
 Le dossier contient les données du séquençage des deux plaques envoyées à la
 suite des manips d'Anne-Laure. 
 
-* structure
+* Structure
 #+BEGIN_SRC sh :results verbatim 
 tree ./ -L 2
 #+END_SRC
@@ -122,9 +122,10 @@ Le rapport était basé sur une version de ma fonction =mutant_caller= dans le
 script R [[./scripts/variant_analysis.R]] qui était fausse. Très fausse. Beaucoup de
 boulot à corriger. 
 
-* analysis 
+* Analyses 
 Contient les résultats des analyses. Graphes ou données transformées. 
-* scripts 
+* Scripts 
+
 Contient les différents scripts nécessaires pour aboutir aux contenus
 d'~analysis~. 
 
@@ -554,7 +555,8 @@ des données intéressantes.
 
 #+END_SRC
 
-* Script principal 
+* Script Principal 
+
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
   cd ~/stage/seq_novembre/scripts
 
@@ -570,6 +572,8 @@ des données intéressantes.
   ./quality_check.sh                             # analyse fastqc, crée les
                                                  # graphes en png et sortie des
                                                  # html dans le dossier analysis
+  ./variantCallerSsaha2.sh                       # détermine la position des SNP
+                                                 # basé sur la référence
   python make_id_table.py > ../data/id_table.dat # crée la table d'association des
                                                  # identifiants de séquence avec
                                                  # le nom des clones
