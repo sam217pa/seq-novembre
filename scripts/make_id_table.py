@@ -3,14 +3,14 @@ import glob
 
 def strong_or_weak(record):
     """
-    Détermine si le mutant est strong ou weak
+    Determine si le mutant est strong ou weak
     """
     if 'S' in record:
         return 'strong'
     else:
         return 'weak'
 
-# en-tête de colonne
+# en-tete de colonne
 print "id name mutant"
 
 # pour chaque fichier ab1

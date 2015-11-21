@@ -4,7 +4,8 @@ cd ~/stage/seq_novembre/scripts
 # quand dans le dossier ./scripts
 cd ../data/
 
-if [ -f untrimmed.fastq && -f trimmed.fastq ]; then # si le dossier tmp existe
+if [ -f untrimmed.fastq ] && [ -f trimmed.fastq ] ; then
+    mkdir tmp
     # analyse les données et output dans tmp
     fastqc untrimmed.fastq -o ./tmp
     fastqc trimmed.fastq   -o ./tmp

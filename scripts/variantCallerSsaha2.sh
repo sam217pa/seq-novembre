@@ -1,9 +1,7 @@
 #!/bin/bash
-cd ~/stage/seq_novembre/scripts
 # variant calling using ssaha2 and ssaha2SNP
 
-cd ../data
-
+cd ~/stage/seq_novembre/data
 ## prend le reverse complement de la séquence de référence
 fastx_reverse_complement -i reference.fasta -o reference_reverse.fasta
 
@@ -22,7 +20,7 @@ ln -s ../reference_reverse.fasta ./reference_reverse.fasta
 ~/.bin/ssahaSNP/ssaha2 -output psl reference_reverse.fasta trimmed.fastq > output.psl
 
 ## polymorphism detection tool
-~/.bin/ssahaSNP/ssaahaSNP reference_reverse.fasta trimmed.fastq > SNP.txt
+~/.bin/ssahaSNP/ssahaSNP reference_reverse.fasta trimmed.fastq > SNP.txt
 
 ## computer readable format conversion
 # egrep trouve les lignes où sont indiquées les données concernant les SNP

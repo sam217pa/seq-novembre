@@ -145,15 +145,18 @@ Pour extraire les données du fichier brut .zip à la structure de données.
   unzip raw_seq_nvbr/1369628.zip
 
   ## crée les dossiers
-  mkdir fasta seq spectrograms
+  mkdir fasta seq spectrograms csv
   ## déplace tout les fichiers dans des dossiers adaptés 
   find . -name "*.fas" -exec mv -i {} -t ./fasta/ \;
   find . -name "*.ab1" -exec mv -i {} -t ./spectrograms/ \;
   find . -name "*.seq" -exec mv -i {} -t ./seq/ \;
+  find . -name "*.csv" -exec mv -i {} -t ./csv/ \;
 
   # déplace le contenu du dossier inutile dans le présent dossier
   mv 1369628/* ./
   rm -r 1369628 # supprime le dossier
+  # déplace le fichier pdf dans le dossier adapté
+  mv *.pdf ../analysis
 #+END_SRC
 
 Les spectrogrammes contiennent l'info de la sequence_id et du nom. 
@@ -165,14 +168,14 @@ On construit une table avec la qualité du mutant en troisième colonne.
 
   def strong_or_weak(record):
       """
-      Détermine si le mutant est strong ou weak
+      Determine si le mutant est strong ou weak
       """
       if 'S' in record:
           return 'strong'
       else:
           return 'weak'
 
-  # en-tête de colonne
+  # en-tete de colonne
   print "id name mutant"
 
   # pour chaque fichier ab1
@@ -202,11 +205,19 @@ brew install emboss
 #+BEGIN_SRC sh :tangle ./scripts/ab1_to_fastq.sh
   cd ~/stage/seq_novembre/scripts
 
+  touch untrimmed.fastq
   for file in ../data/spectrograms/*.ab1
   do
-      seqret -sformat abi -osformat fastq -auto -stdout -sequence $file > ../data/untrimmed.fastq
-      seqret -sformat abi -osformat fasta -auto -stdout -sequence $file > ../data/untrimmed.fasta
+      seqret \
+          -sformat abi \
+          -osformat fastq \
+          -auto \
+          -stdout \
+          -sequence $file \
+          >> ../data/untrimmed.fastq
   done
+
+  fastq_to_fasta -i ../data/untrimmed.fastq -o ../data/untrimmed.fasta
 #+END_SRC
 
 ** Des données non-trimmées aux données trimmées et filtrées
@@ -220,16 +231,20 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
   #' -minlen=620 : keep only seq with length > 620, after trimming.
   #' -Xmx1g : tells bbduk / java to use 1G of RAM
 
-  if [[ -f ../data/untrimmed.fastq && ! -f ../data/trimmed.fastq ]]
+  if [[ -f ../data/untrimmed.fastq && ! -f ../data/trim.fastq ]]
   then # si les fichiers n'existent pas.
       ~/.bin/bbmap/bbduk.sh -Xmx1g \
                             -in=../data/untrimmed.fastq \
-                            -out=../data/trimmed.fastq \
+                            -out=../data/trim.fastq \
                             -qtrim=rl \
                             -trimq=28 \
                             -minlen=620
+
+      seqtk seq -q28 -nN ../data/trim.fastq > ../data/trimmed.fastq
+      fastq_to_fasta -i ../data/trimmed.fastq -o ../data/trimmed.fasta
+      rm ../data/trim.fastq
   else
-      printf "Le fichier untrimmed.fastq n'existe pas, ou le fichier trimmed.fastq n'existe pas."
+      printf "Le fichier untrimmed.fastq n'existe pas, ou le fichier trimmed.fastq existe déjà."
   fi
 #+END_SRC
 
@@ -243,7 +258,8 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   # quand dans le dossier ./scripts
   cd ../data/
 
-  if [ -f untrimmed.fastq && -f trimmed.fastq ]; then # si le dossier tmp existe
+  if [ -f untrimmed.fastq ] && [ -f trimmed.fastq ] ; then
+      mkdir tmp
       # analyse les données et output dans tmp
       fastqc untrimmed.fastq -o ./tmp
       fastqc trimmed.fastq   -o ./tmp
@@ -269,11 +285,9 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
 
 #+BEGIN_SRC sh :tangle ./scripts/variantCallerSsaha2.sh
   #!/bin/bash
-  cd ~/stage/seq_novembre/scripts
   # variant calling using ssaha2 and ssaha2SNP
 
-  cd ../data
-
+  cd ~/stage/seq_novembre/data
   ## prend le reverse complement de la séquence de référence
   fastx_reverse_complement -i reference.fasta -o reference_reverse.fasta
 
@@ -292,7 +306,7 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
   ~/.bin/ssahaSNP/ssaha2 -output psl reference_reverse.fasta trimmed.fastq > output.psl
 
   ## polymorphism detection tool
-  ~/.bin/ssahaSNP/ssaahaSNP reference_reverse.fasta trimmed.fastq > SNP.txt
+  ~/.bin/ssahaSNP/ssahaSNP reference_reverse.fasta trimmed.fastq > SNP.txt
 
   ## computer readable format conversion
   # egrep trouve les lignes où sont indiquées les données concernant les SNP
@@ -310,25 +324,16 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
 #+END_SRC
 
 ** Analyse des variants
-
 *** Lecture des données et nettoyage
 Le fichier [[~/stage/seq_novembre/data/variantCalling/snp_calling.dat]] contient les
 données d'intérêt. Il ne contient ni le nom du transformant, ni son type (Weak
 ou Strong). Les données sont récupérées dans le fichier [[data/id_table.dat]]. Les
 deux tables sont associés via un /inner_join/. 
 
-#+name: lecture
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
-  setwd("~/stage/seq_novembre/data/variantCalling2")
+  setwd("~/stage/seq_novembre/data/variantCalling")
 
   library(dplyr)
-
-  mytheme <- theme(panel.ontop = TRUE,
-                   axis.text = element_text(size = 8, colour = "gray"),
-                   panel.grid.major.x = element_blank(),
-                   panel.grid.minor.x = element_blank(),
-                   panel.grid.minor.y = element_blank(),
-                   panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
   ## read the data
   snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
@@ -390,9 +395,14 @@ Des graphiques de distribution globale des SNP sont fait ici.
 
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
   library(ggplot2)
-  library(extrafont)
   library(ggthemes)
-  library(cowplot)
+
+  mytheme <- theme(panel.ontop = TRUE,
+                   axis.text = element_text(size = 8, colour = "gray"),
+                   panel.grid.major.x = element_blank(),
+                   panel.grid.minor.x = element_blank(),
+                   panel.grid.minor.y = element_blank(),
+                   panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
   ##==============================================================================
   ## PLOT DISTRIBUTIONS
@@ -490,10 +500,10 @@ endroit on bascule à nouveau sur le génotype sauvage.
       mytheme
 
   ## sauvegarde du graphique
-  ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
+  cowplot::ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
          height = 21, width = 29.7, units = "cm")
 
-         #+END_SRC
+#+END_SRC
 
 *** SNP inattendus
 Le but est de trouver les SNPs aux positions calibrées qui ne sont pas ceux
@@ -554,6 +564,42 @@ des données intéressantes.
   dev.off()
 
 #+END_SRC
+*** Détermination des SNP calibrés
+
+On veut filtrer les positions qui sont bien les SNP calibrés. 
+
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+    snp_data %>% group_by(offset_on_subject) %>%
+        summarise(count = n()) %>%
+        filter(count > 10) ->
+        position_table
+
+    #' détermine si la postion sur la séquence de référence est un SNP artificiel ou
+    #' un autre genre de SNP.
+    is_a_position <- function(position, table)
+    {
+        ifelse(position %in% table, 'yes', 'no')
+    }
+
+    snp_data %>%
+        rowwise() %>%
+        mutate(position = is_a_position(offset_on_subject,
+                                        position_table$offset_on_subject)) %>%
+        ungroup() ->
+        snp_data
+
+  ### work in progress
+  ## snp_data %>%
+  ##     filter(position == "yes") %>%
+  ##     qplot(data = ., offset_on_subject, q_qual, geom = "point", color = mutant) +
+  ##     theme_minimal() +
+  ##     geom_vline(xintercept = snp_data$offset_on_subject, alpha = 0.1)
+#+END_SRC
+
+*** Détermination de la position des SNP par rapport à la conversion tract
+
+Écrire une fonction =is_inside_conversion= qui détermine si un SNP est en dehors
+ou en dedans de la conversion tract. 
 
 * Script Principal 
 
@@ -562,22 +608,27 @@ des données intéressantes.
 
   chmod +x *.sh
 
-  ./extract_raw_data                             # extrait les données des .zip et
+  ./extract_raw_data.sh                          # extrait les données des .zip et
                                                  # organise en sous fichiers
+
   ./ab1_to_fastq.sh                              # extrait les fastq et fasta
                                                  # depuis les .ab1
+
   ./trim_low_quality.sh                          # supprime les données de faible
                                                  # qualité et transforme les bases
                                                  # de qualité inférieure à 28 en N
+
   ./quality_check.sh                             # analyse fastqc, crée les
                                                  # graphes en png et sortie des
                                                  # html dans le dossier analysis
+
   ./variantCallerSsaha2.sh                       # détermine la position des SNP
                                                  # basé sur la référence
+
   python make_id_table.py > ../data/id_table.dat # crée la table d'association des
                                                  # identifiants de séquence avec
                                                  # le nom des clones
-  Rscript variant_analysis.R                     # analyses et graphiques dans ce
-                                                 # script
+
+  Rscript variant_analysis.R                     # analyses et graphiques 
 #+END_SRC
 
