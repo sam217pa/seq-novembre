@@ -1,0 +1,49 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /Users/samuelbarreto/Dropbox/Cours/Master/Semestre4/StageM2/seq_novembre/README.org
+
+
+* TODO Positions terminales de switch [1/3]
+:PROPERTIES:
+:ARCHIVE_TIME: 2015-11-27 Fri 22:59
+:ARCHIVE_FILE: ~/Dropbox/Cours/Master/Semestre4/StageM2/seq_novembre/README.org
+:ARCHIVE_OLPATH: Scripts/Analyse des variants
+:ARCHIVE_CATEGORY: README
+:ARCHIVE_TODO: TODO
+:END:
+- [ ] voir avec vincent le test à utiliser pour comparer les distributions
+- [ ] comparer les distributions statistiquement, si $n$ est suffisamment grand. 
+- [X] Naïvement on utilise ici la position terminale du dernier SNP. Cependant,
+  il existe des SNPs qui ne sont pas dans la conversion track, c'est ce qu'on a
+  observé. Il faut donc définir une nouvelle fonction =max_pos= qui définit si
+  on est bien à un SNP calibré ou non. voir après avoir définit la fonction
+  =is_a_position=.
+
+On veut ici analyser la distribution des positions terminales de SNP. C'est à dire à quel
+endroit on bascule à nouveau sur le génotype sauvage. On ne garde que les
+positions qui sont des positions calibrées. 
+
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  ##==============================================================================
+  ## POSITION DE SWITCH
+  ##==============================================================================
+
+  pdf(file = "../../analysis/switch_distrib.pdf", height = 5.8, width = 8.3)
+
+  snp_data %>%
+      ## par plasmide -- et par type de mutant
+      group_by(name, mutant) %>%
+      ## garde seulement les positions calibrées
+      filter(position == "oui") %>% 
+      ## cherche la postion minimale de SNP
+      summarise(offset_on_subject = min(offset_on_subject)) %>% 
+      ## represente la distribution
+      plot_snp(legend_position = c(0.8, 0.8)) +
+      ggtitle("Distribution de la position de switch en fonction du type de mutant") +
+      ## superpose les deux distribution pour comparer
+      facet_grid( mutant ~ .) 
+
+  dev.off()
+#+END_SRC
+

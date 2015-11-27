@@ -6,14 +6,28 @@ library(dplyr)
 snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
 ## enlève les colonnes inutiles
 snp %>%
-    select( -match, -subject_name, -index_of_subject, -length_of_subject,
-           -match_direction) ->
-    snp
+    select(
+        -match, -subject_name, -index_of_subject, -length_of_subject,
+        -match_direction, -contains("_of_read"), -contains("on_read"),
+        -contains("_of_snp"), -s_qual
+    ) -> snp
+ 
 ## lit les métadonnées de séquence
 id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
 
 ## fait correspondre le read_name avec le nom du clone et le type de mutant W ou S
 snp_data <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
+
+## suppress tmp var
+rm(snp, id_table)
+
+## bascule les contaminants mysterieux dans la categorie weak
+snp_data$mutant[snp_data$name == "pS60-1073"] <- "weak"
+snp_data$mutant[snp_data$name == "pS83-1073"] <- "weak"
+snp_data$mutant[snp_data$name == "pS92-1073"] <- "weak"
+snp_data$mutant[snp_data$name == "pS83-1073"] <- "weak"
+snp_data$mutant[snp_data$name == "pS91-1073"] <- "weak"
+snp_data$mutant[snp_data$name == "pW6-1073" ] <- "strong"
 
 #' une fonction pour déterminer si la substitution est strong ou weak. On peut
 #' avoir des substitutions weak chez les strongs
@@ -46,180 +60,243 @@ snp_data %>%
 ## conversion en facteur
 snp_data$mutation_type = factor(snp_data$mutation_type)
 
-library(ggplot2)
-library(ggthemes)
+##==============================================================================
+## SHORTCUT PLOT FUNCTION
+##==============================================================================
 
-mytheme <- theme(panel.ontop = TRUE,
-                 axis.text = element_text(size = 8, colour = "gray"),
-                 panel.grid.major.x = element_blank(),
-                 panel.grid.minor.x = element_blank(),
-                 panel.grid.minor.y = element_blank(),
-                 panel.grid.major.y = element_line(colour = "white", size = 1)) 
+library(ggplot2)
+
+##' .. content for \description{} (no empty lines) ..
+##' 
+##' Une fonction qui permet de court-circuiter ggplot : représente en ordonnée
+##' la distribution des positions de snp, en abscisse la position des SNPs, par
+##' défault la couleur repéresente le type de mutant, peut être également
+##' attribuée à mutation_type. Respecte les critères visuels de tufte. Nécessite
+##' ggplot2 1.02 si je ne m'abuse, avec l'option panel.ontop en tout cas.
+##' 
+##' .. content for \details{} ..
+##' @title plot_snp
+##' @param snp_data les données de snp
+##' @param fill la couleur par laquelle on color les barres
+##' @param legend_position la position de la légende sur le graphe
+##' @param legend_name le titre de la légende. rien par défault
+##' @return un graphique
+##' @author Samuel Barreto
+plot_snp <- function(data, fill_by = "mutant",
+                                  legend_position = c(0.2, 0.8),
+                                  legend_name = "")
+{
+    plot <- ggplot(data = data, aes(offset_on_subject)) +
+        theme_minimal(base_family = "Courier") +
+        scale_x_continuous(breaks = seq(1, 734, 30)) +
+        scale_fill_brewer(palette = "Set2", name = legend_name) +
+        xlab("") +
+        ylab("") +
+        theme(panel.ontop = TRUE, legend.position = legend_position,
+              axis.text = element_text(size = 8, colour = "gray"),
+              panel.grid.major.x = element_blank(),
+              panel.grid.minor.x = element_blank(),
+              panel.grid.minor.y = element_blank(),
+              panel.grid.major.y = element_line(colour = "white", size = 1))
+
+    if (fill_by == "mutation_type")
+    {
+        plot + geom_histogram(aes(fill = mutation_type), binwidth = 10,
+                              position = "dodge")
+    } else {
+        plot + geom_histogram(aes(fill = mutant), binwidth = 10,
+                              position = "dodge")
+    }
+}
 
 ##==============================================================================
 ## PLOT DISTRIBUTIONS
 ##==============================================================================
-snp_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
-    geom_density(aes(fill = mutant), alpha = 0.2) +
-    geom_histogram(aes(fill = mutant),
-                   binwidth = 10, position = "dodge") +
-    theme_minimal(base_family = "Courier") +
-    scale_x_continuous(breaks = seq(1, 734, 30)) +
-    scale_fill_brewer(palette = "Set2", name = "Type de gène\nsynthétique") +
-    xlab("Distribution des SNP sur le gene sauvage") +
-    ylab("") +
-    theme(panel.ontop = TRUE,
-          legend.position = c(0.8, 0.8),
-          axis.text = element_text(size = 8, colour = "gray"),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          panel.grid.major.y = element_line(colour = "white", size = 1)) 
+
+pdf(file = "../../analysis/snp_distribution.pdf", height = 5.8, width = 8.3)
 
 ## distribution des SNP
 ## facétée par type de mutant, couleur = type de mutation
-mutation_plot <- ggplot(data = snp_data, aes(offset_on_subject)) +
-    geom_histogram(aes(fill = mutation_type), binwidth = 10, position = "dodge") +
-    facet_grid(~mutant, labeller = label_both) +
-    theme_minimal(base_family = "Courier") +
-    scale_x_continuous(breaks = seq(1, 734, 60)) +
-    scale_fill_brewer(palette = "Set2",
-                      name = "Type de mutation",
-                      labels = c("AT -> GC", "GC -> AT")) +
-    xlab("Distribution des SNP sur le gene sauvage") +
-    ylab("") +
-    theme(panel.ontop = TRUE,
-          legend.position = c(0.4, 0.8),
-          axis.text = element_text(size = 8, colour = "gray"),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          panel.grid.major.y = element_line(colour = "white", size = 1)) 
-
-##==============================================================================
-## SAVE PLOTS
-##==============================================================================
-save_to_a5 <- function(output_file, plot)
-{
-    pdf(file = output_file, height = 5.8, width = 8.3)
-    print(plot)
-    dev.off()
-}
-
-save_to_a3 <- function(output_file, plot)
-{
-                                        # a3 dimensions : 11.69in x 16.53in
-    pdf(file = output_file, height = 11.69, width = 16.53)
-    print(plot)
-    dev.off()
-}
-
-save_to_a5(output_file = "../../analysis/substitution_distribution.pdf",
-           plot = mutation_plot)
-save_to_a5(output_file = "../../analysis/snp_distribution.pdf",
-           plot = snp_plot)
-save_to_a5(output_file = "../../analysis/muttype_plot.pdf",
-           plot = muttype_plot)
-
-##==============================================================================
-## SWITCH INITIAL
-##==============================================================================
-
-## en tenant compte du type de mutant
 snp_data %>%
+    plot_snp(legend_name = "Exogene", legend_pos= c(.2, .8))
+
+dev.off()
+
+#-------------------------------------------------------------------------------
+pdf(file = "../../analysis/mutant_snp_distribution.pdf", height = 5.8, width = 8.3)
+
+snp_data %>%
+    plot_snp(fill_by = "mutation_type", legend_name = "Type de Mutation" ) +
+    facet_grid(~mutant)
+
+dev.off()
+
+## ==============================================================================
+## SNP ATTENDUS OU NON
+## ==============================================================================
+##
+
+## compte le nombre de SNP par position. hypothèse : un SNP `calibré' génère au
+## moins 5 SNP parmi toutes les séquences. sortie dans une table qui sert de
+## query à la fonction =is_position=
+snp_data %>%
+    group_by(offset_on_subject) %>%
+    summarise(count = n()) %>%
+    ## qplot(data = ., offset_on_subject, count)
+    filter(count > 5) %>%
+    select(offset_on_subject) %>%
+    unlist() %>%
+    as.vector() ->
+    position_table
+
+##' .. content for \description{} (no empty lines) ..
+##' détermine si la postion sur la séquence de référence est un SNP artificiel
+##' ou un autre genre de SNP.
+##' .. content for \details{} ..
+##' @title is_position
+##' @param position 
+##' @param table 
+##' @return "oui" ou "non"
+##' @author Samuel Barreto
+is_position <- function(position, table)
+{
+    ifelse(position %in% table, 'oui', 'non')
+}
+
+snp_data %>%
+    rowwise() %>%
+    mutate(position = is_position(offset_on_subject, position_table)) %>%
+    ungroup() ->
+    snp_data
+
+## gros résultat là.
+## on voit seulement 2 mutations S->W contre 12 W->S !
+pdf(file = "../../analysis/bgc_en_action.pdf", height = 5.8, width = 8.3)
+
+snp_data %>%
+    filter(position == "non") %>%
+    plot_snp(fill_by = "mutation_type")
+
+dev.off()
+
+sink(file = "../../analysis/bgc_en_action.tex")
+snp_data %>%
+    filter(position == "non") %>%
+    group_by(mutation_type) %>%
+    summarise(count = n()) %>%
+    knitr::kable(format = "latex")
+sink()
+
+##==============================================================================
+## POSITION DE SWITCH
+##==============================================================================
+
+pdf(file = "../../analysis/switch_distrib.pdf", height = 5.8, width = 8.3)
+
+snp_data %>%
+    ## par plasmide -- et par type de mutant
     group_by(name, mutant) %>%
-    summarise(switch_pos = max(offset_on_subject)) ->
-    switch_data_mutant
+    ## garde seulement les positions calibrées
+    filter(position == "oui") %>% 
+    ## cherche la postion minimale de SNP
+    summarise(offset_on_subject = min(offset_on_subject)) %>% 
+    ## represente la distribution
+    plot_snp(legend_position = c(0.8, 0.8)) +
+    ggtitle("Distribution de la position de switch en fonction du type de mutant") +
+    ## superpose les deux distribution pour comparer
+    facet_grid( mutant ~ .) 
 
-switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
-    geom_histogram(aes(fill = mutant),
-                   position = "dodge", 
-                   binwidth = 10) +
-    ## facet_grid(.~mutant) +
-    scale_x_continuous(breaks = seq(1, 734, 30)) +
-    theme_minimal(base_family = "Courier") +
-    scale_fill_brewer(palette = "Set2") +
-    xlab("Distribution de la position de switch en fonction du type de mutant") +
-    ylab("") +
-    theme(legend.position = c(0.7, 0.5)) +
-    mytheme
-
-## sauvegarde du graphique
-cowplot::ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
-       height = 21, width = 29.7, units = "cm")
+dev.off()
 
 ##============================================================================== 
 ## OUTLIERS
 ##==============================================================================
-
-#' Détermine si le SNP en question est un outlier ou non, c'est
-#' à dire une mutation strong chez un mutant weak ou inversement.
-#' @param mutant : le type de mutant
-#' @param mutation_type : le type de substitution
-find_outlier <- function(mutant, mutation_type)
+##
+##' .. content for \description{} (no empty lines) ..
+##' 
+##' Détermine si le SNP en question est un outlier ou non, c'est à dire une
+##' mutation strong chez un mutant weak ou inversement.
+##' 
+##' .. content for \details{} ..
+##' @title is_outlier
+##' @param mutant : le type de mutant
+##' @param mutation_type : le type de substitution
+##' @return 
+##' @author Samuel Barreto
+is_outlier <- function(mutant, mutation_type)
 {
-    if (mutant == 'strong' && mutation_type == 'weak') {
-        'strong_weak'
-    } else if (mutant == 'weak' && mutation_type == 'strong') {
-        'weak_strong'
+    if (mutant == 'strong' && mutation_type == 'SW') {
+        "non"
+    } else if (mutant == 'weak' && mutation_type == 'WS') {
+        "non"
     } else {
-        'attendu'
+        'oui'
     }
 }
 
 snp_data %>%
     rowwise() %>%
-    mutate(outlier = find_outlier(mutant, mutation_type)) %>%
-    ungroup() ->
-    outlier_data
+    mutate(attendu = is_outlier(mutant, mutation_type)) %>%
+    ungroup() %>%
+    filter(position == "oui") %>% 
+    filter(attendu == "non") %>%
+    plot_snp(legend_position = c(0.2, 0.9)) +
+    geom_text(aes(label = name, y = 0.5), check_overlap = TRUE,
+              position = "dodge") +
+    coord_flip() +
+    theme(panel.ontop = FALSE)
 
-pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
-outlier_data %>%
-    filter(outlier != "attendu") %>%
-    qplot(data = ., offset_on_subject, fill = outlier, binwidth = 10) +
-    theme_minimal(base_family = "Courier") +
-    xlab("") + ylab("") +
-    scale_fill_brewer(palette = "Set2",
-                      labels = c("S -> W", "W -> S")) +
-    theme(legend.position = c(0.8, 0.7),
-          legend.title = element_blank(),
-          legend.text = element_text(size = 10)) +
-    mytheme 
-dev.off()
-
-pdf(file = "../../analysis/strong_vs_weak.pdf", width = 4, height = 4)
+## sortie des résultats dans un joli tableau latex
+sink( file = "../../analysis/outlier.tex", append = FALSE)
 snp_data %>%
-    ggplot(aes(offset_on_subject, fill = mutation_type)) +
-    geom_histogram(binwidth = 10) +
-    facet_grid(mutation_type ~ .) +
-    xlab("") + ylab("") +
-    theme_minimal(base_family = "Courier") +
-    scale_fill_brewer(palette = "Set2", guide = FALSE) +
-    mytheme
-dev.off()
+    rowwise() %>%
+    mutate(attendu = is_outlier(mutant, mutation_type)) %>%
+    ungroup() %>%
+    filter(attendu == "non") %>%
+    knitr::kable(format = "latex")
+sink()
 
-snp_data %>% group_by(offset_on_subject) %>%
-      summarise(count = n()) %>%
-      filter(count > 10) ->
-      position_table
+## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
 
-  #' détermine si la postion sur la séquence de référence est un SNP artificiel ou
-  #' un autre genre de SNP.
-  is_a_position <- function(position, table)
-  {
-      ifelse(position %in% table, 'yes', 'no')
-  }
+snp_data %>%
+    ## par exogene
+    group_by(name) %>%
+    ## garde seulement les positions attendues
+    filter(position == "oui") %>%
+    ## cherche la borne supérieure et inférieure
+    summarise(min = min(offset_on_subject), max = max(offset_on_subject)) %>%
+    ## combine avec la table mère
+    inner_join(snp_data, by = "name") ->
+    snp_data
+ 
+##' .. content for \description{} (no empty lines) ..
+##' détermine si le SNP est dans la conversion tract ou non. 
+##' .. content for \details{} ..
+##' @title 
+##' @param query la position requête
+##' @param min la borne inférieure de la conversion tract
+##' @param max la borne supérieure de la conversion tract
+##' @return oui ou non
+##' @author Samuel Barreto
+is_inside_conv <- function(query, min, max)
+{
+    ifelse(min <= query & query <= max, "oui", "non")
+}
 
-  snp_data %>%
-      rowwise() %>%
-      mutate(position = is_a_position(offset_on_subject,
-                                      position_table$offset_on_subject)) %>%
-      ungroup() ->
-      snp_data
+sink(file = "../../analysis/inside_conv.tex")
 
-### work in progress
-## snp_data %>%
-##     filter(position == "yes") %>%
-##     qplot(data = ., offset_on_subject, q_qual, geom = "point", color = mutant) +
-##     theme_minimal() +
-##     geom_vline(xintercept = snp_data$offset_on_subject, alpha = 0.1)
+snp_data %>%
+    rowwise() %>%
+    ## détermine si on est dans la conversion tract ou non
+    mutate(inside_conv = is_inside_conv(offset_on_subject, min, max)) %>%
+    ungroup() %>%
+    ## filtre pour avoir les snp non attendus
+    filter(position == "non") %>%
+    ## groupe selon qu'on est dans ou en dehors de la CT
+    group_by(inside_conv) %>%
+    ## compte le nombre de snp par cas
+    summarise(count = n()) %>%
+    ## format en .tex
+    kable(format = "latex")
+
+sink()

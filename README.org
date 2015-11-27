@@ -367,6 +367,7 @@ tableau des Weak.
   snp_data$mutant[snp_data$name == "pW6-1073" ] <- "strong"
 
 #+END_SRC
+
 *** Détermine la qualité des SNP
 Pour déterminer si le SNP est de type /weak/ ou /strong/, j'utilise la fonction
 =mutant_caller=. Si la référence est A ou T, soit le transformant est C ou G, et
@@ -412,6 +413,10 @@ substitution est /SW/ ; soit le transformant est G ou C, la substitution est
 Des graphiques de distribution globale des SNP sont fait ici. 
 
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  ##==============================================================================
+  ## SHORTCUT PLOT FUNCTION
+  ##==============================================================================
+
   library(ggplot2)
 
   ##' .. content for \description{} (no empty lines) ..
@@ -480,8 +485,9 @@ Des graphiques de distribution globale des SNP sont fait ici.
   dev.off()
 #+END_SRC
 
-*** TODO Détermination des SNP calibrés [0/1]
-- [ ] créer la fonction =is_a_position= qui détermine si un SNP est bien à la
+*** DONE Détermination des SNP calibrés [1/1]
+CLOSED: [2015-11-27 Fri 22:56]
+- [X] créer la fonction =is_a_position= qui détermine si un SNP est bien à la
   position attendu
 On veut filtrer les positions qui sont bien les SNP calibrés. 
 
@@ -539,21 +545,22 @@ On veut filtrer les positions qui sont bien les SNP calibrés.
       filter(position == "non") %>%
       group_by(mutation_type) %>%
       summarise(count = n()) %>%
-      kable(format = "latex")
+      knitr::kable(format = "latex")
   sink()
 #+END_SRC
 
-*** TODO Positions terminales de switch [0/3]
+*** TODO Positions terminales de switch [1/3]
 - [ ] voir avec vincent le test à utiliser pour comparer les distributions
 - [ ] comparer les distributions statistiquement, si $n$ est suffisamment grand. 
-- [ ] Naïvement on utilise ici la position terminale du dernier SNP. Cependant,
+- [X] Naïvement on utilise ici la position terminale du dernier SNP. Cependant,
   il existe des SNPs qui ne sont pas dans la conversion track, c'est ce qu'on a
   observé. Il faut donc définir une nouvelle fonction =max_pos= qui définit si
   on est bien à un SNP calibré ou non. voir après avoir définit la fonction
-  =is_a_position=.
+  =is_a_position=. => Simplement filtrer par position
 
 On veut ici analyser la distribution des positions terminales de SNP. C'est à dire à quel
-endroit on bascule à nouveau sur le génotype sauvage. 
+endroit on bascule à nouveau sur le génotype sauvage. On ne garde que les
+positions qui sont des positions calibrées. 
 
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
   ##==============================================================================
@@ -565,6 +572,8 @@ endroit on bascule à nouveau sur le génotype sauvage.
   snp_data %>%
       ## par plasmide -- et par type de mutant
       group_by(name, mutant) %>%
+      ## garde seulement les positions calibrées
+      filter(position == "oui") %>% 
       ## cherche la postion minimale de SNP
       summarise(offset_on_subject = min(offset_on_subject)) %>% 
       ## represente la distribution
@@ -576,8 +585,10 @@ endroit on bascule à nouveau sur le génotype sauvage.
   dev.off()
 #+END_SRC
 
-*** TODO SNP inattendus [0/1]
-- [ ] rajouter le filtre sur les positions calibrées. 
+*** DONE SNP inattendus [1/1]
+CLOSED: [2015-11-27 Fri 23:53]
+- [X] rajouter le filtre sur les positions calibrées. 
+
 Le but est de trouver les SNPs aux positions calibrées qui ne sont pas ceux
 attendus. Typiquement ce sont les mutations /strong/ dans la manip Weak, et les
 mutations /weak/ dans la manip Strong. Si les mutations en questions sont
@@ -595,12 +606,12 @@ des données intéressantes.
   ##' mutation strong chez un mutant weak ou inversement.
   ##' 
   ##' .. content for \details{} ..
-  ##' @title outlierP
+  ##' @title is_outlier
   ##' @param mutant : le type de mutant
   ##' @param mutation_type : le type de substitution
   ##' @return 
   ##' @author Samuel Barreto
-  outlierP <- function(mutant, mutation_type)
+  is_outlier <- function(mutant, mutation_type)
   {
       if (mutant == 'strong' && mutation_type == 'SW') {
           "non"
@@ -613,9 +624,9 @@ des données intéressantes.
 
   snp_data %>%
       rowwise() %>%
-      mutate(attendu = outlierP(mutant, mutation_type)) %>%
+      mutate(attendu = is_outlier(mutant, mutation_type)) %>%
       ungroup() %>%
-      ## TODO filter(calibre == "oui") %>% 
+      filter(position == "oui") %>% 
       filter(attendu == "non") %>%
       plot_snp(legend_position = c(0.2, 0.9)) +
       geom_text(aes(label = name, y = 0.5), check_overlap = TRUE,
@@ -627,19 +638,64 @@ des données intéressantes.
   sink( file = "../../analysis/outlier.tex", append = FALSE)
   snp_data %>%
       rowwise() %>%
-      mutate(attendu = outlierP(mutant, mutation_type)) %>%
+      mutate(attendu = is_outlier(mutant, mutation_type)) %>%
       ungroup() %>%
       filter(attendu == "non") %>%
-      kable(format = "latex")
+      knitr::kable(format = "latex")
   sink()
 
   ## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
 #+END_SRC
 
-*** Détermination de la position des SNP par rapport à la conversion tract
+*** DONE Position des SNP par rapport à la conversion tract [1/1]
+CLOSED: [2015-11-27 Fri 23:52]
+- [X] Écrire une fonction =is_inside_conv= qui détermine si un SNP est en dehors
+  ou en dedans de la conversion tract.
 
-Écrire une fonction =inside_convP= qui détermine si un SNP est en dehors
-ou en dedans de la conversion tract. 
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  snp_data %>%
+      ## par exogene
+      group_by(name) %>%
+      ## garde seulement les positions attendues
+      filter(position == "oui") %>%
+      ## cherche la borne supérieure et inférieure
+      summarise(min = min(offset_on_subject), max = max(offset_on_subject)) %>%
+      ## combine avec la table mère
+      inner_join(snp_data, by = "name") ->
+      snp_data
+ 
+  ##' .. content for \description{} (no empty lines) ..
+  ##' détermine si le SNP est dans la conversion tract ou non. 
+  ##' .. content for \details{} ..
+  ##' @title 
+  ##' @param query la position requête
+  ##' @param min la borne inférieure de la conversion tract
+  ##' @param max la borne supérieure de la conversion tract
+  ##' @return oui ou non
+  ##' @author Samuel Barreto
+  is_inside_conv <- function(query, min, max)
+  {
+      ifelse(min <= query & query <= max, "oui", "non")
+  }
+
+  sink(file = "../../analysis/inside_conv.tex")
+
+  snp_data %>%
+      rowwise() %>%
+      ## détermine si on est dans la conversion tract ou non
+      mutate(inside_conv = is_inside_conv(offset_on_subject, min, max)) %>%
+      ungroup() %>%
+      ## filtre pour avoir les snp non attendus
+      filter(position == "non") %>%
+      ## groupe selon qu'on est dans ou en dehors de la CT
+      group_by(inside_conv) %>%
+      ## compte le nombre de snp par cas
+      summarise(count = n()) %>%
+      ## format en .tex
+      kable(format = "latex")
+
+  sink()
+#+END_SRC
 
 * Script Principal 
 
