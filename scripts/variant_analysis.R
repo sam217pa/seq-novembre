@@ -1,13 +1,6 @@
-setwd("~/stage/seq_novembre/data/variantCalling2")
+setwd("~/stage/seq_novembre/data/variantCalling")
 
 library(dplyr)
-
-mytheme <- theme(panel.ontop = TRUE,
-                 axis.text = element_text(size = 8, colour = "gray"),
-                 panel.grid.major.x = element_blank(),
-                 panel.grid.minor.x = element_blank(),
-                 panel.grid.minor.y = element_blank(),
-                 panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
 ## read the data
 snp <- tbl_df(read.table("snp_calling.dat", head = TRUE))
@@ -54,9 +47,14 @@ snp_data %>%
 snp_data$mutation_type = factor(snp_data$mutation_type)
 
 library(ggplot2)
-library(extrafont)
 library(ggthemes)
-library(cowplot)
+
+mytheme <- theme(panel.ontop = TRUE,
+                 axis.text = element_text(size = 8, colour = "gray"),
+                 panel.grid.major.x = element_blank(),
+                 panel.grid.minor.x = element_blank(),
+                 panel.grid.minor.y = element_blank(),
+                 panel.grid.major.y = element_line(colour = "white", size = 1)) 
 
 ##==============================================================================
 ## PLOT DISTRIBUTIONS
@@ -147,7 +145,7 @@ switch_pos_by_mutant <- ggplot(switch_data_mutant, aes(switch_pos)) +
     mytheme
 
 ## sauvegarde du graphique
-ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
+cowplot::ggsave(switch_pos_by_mutant, file = "../../analysis/switch_pos_by_mutant.pdf",
        height = 21, width = 29.7, units = "cm")
 
 ##============================================================================== 
@@ -199,3 +197,29 @@ snp_data %>%
     scale_fill_brewer(palette = "Set2", guide = FALSE) +
     mytheme
 dev.off()
+
+snp_data %>% group_by(offset_on_subject) %>%
+      summarise(count = n()) %>%
+      filter(count > 10) ->
+      position_table
+
+  #' détermine si la postion sur la séquence de référence est un SNP artificiel ou
+  #' un autre genre de SNP.
+  is_a_position <- function(position, table)
+  {
+      ifelse(position %in% table, 'yes', 'no')
+  }
+
+  snp_data %>%
+      rowwise() %>%
+      mutate(position = is_a_position(offset_on_subject,
+                                      position_table$offset_on_subject)) %>%
+      ungroup() ->
+      snp_data
+
+### work in progress
+## snp_data %>%
+##     filter(position == "yes") %>%
+##     qplot(data = ., offset_on_subject, q_qual, geom = "point", color = mutant) +
+##     theme_minimal() +
+##     geom_vline(xintercept = snp_data$offset_on_subject, alpha = 0.1)
