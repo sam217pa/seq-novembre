@@ -16,18 +16,18 @@ snp %>%
 id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
 
 ## fait correspondre le read_name avec le nom du clone et le type de mutant W ou S
-snp_data <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
+snp <- inner_join(x = snp, y = id_table, by = c("read_name" = "id"))
 
 ## suppress tmp var
-rm(snp, id_table)
+rm(id_table)
 
-## bascule les contaminants mysterieux dans la categorie weak
-snp_data$mutant[snp_data$name == "pS60-1073"] <- "weak"
-snp_data$mutant[snp_data$name == "pS83-1073"] <- "weak"
-snp_data$mutant[snp_data$name == "pS92-1073"] <- "weak"
-snp_data$mutant[snp_data$name == "pS83-1073"] <- "weak"
-snp_data$mutant[snp_data$name == "pS91-1073"] <- "weak"
-snp_data$mutant[snp_data$name == "pW6-1073" ] <- "strong"
+## bascule les contaminants mysterieux dans la bonne catégorie
+## TESTE ET APPROUVE
+snp$mutant[snp$name == "pS60-1073"] <- "weak"
+snp$mutant[snp$name == "pS83-1073"] <- "weak"
+snp$mutant[snp$name == "pS92-1073"] <- "weak"
+snp$mutant[snp$name == "pS91-1073"] <- "weak"
+snp$mutant[snp$name == "pW6-1073" ] <- "strong"
 
 #' une fonction pour déterminer si la substitution est strong ou weak. On peut
 #' avoir des substitutions weak chez les strongs
@@ -52,13 +52,13 @@ mutant_caller <- function(subject, query)
 
 ## on applique la fonction rowwise, ie ligne par ligne, via `mutate`, puis on
 ## dégroupe.
-snp_data %>%
+snp %>%
     rowwise() %>%
     mutate(mutation_type = mutant_caller(s_base, q_base)) %>%
     ungroup() ->
-    snp_data
+    snp
 ## conversion en facteur
-snp_data$mutation_type = factor(snp_data$mutation_type)
+snp$mutation_type = factor(snp$mutation_type)
 
 ##==============================================================================
 ## SHORTCUT PLOT FUNCTION
@@ -76,7 +76,7 @@ library(ggplot2)
 ##' 
 ##' .. content for \details{} ..
 ##' @title plot_snp
-##' @param snp_data les données de snp
+##' @param snp les données de snp
 ##' @param fill la couleur par laquelle on color les barres
 ##' @param legend_position la position de la légende sur le graphe
 ##' @param legend_name le titre de la légende. rien par défault
@@ -117,7 +117,7 @@ pdf(file = "../../analysis/snp_distribution.pdf", height = 5.8, width = 8.3)
 
 ## distribution des SNP
 ## facétée par type de mutant, couleur = type de mutation
-snp_data %>%
+snp %>%
     plot_snp(legend_name = "Exogene", legend_pos= c(.2, .8))
 
 dev.off()
@@ -125,7 +125,7 @@ dev.off()
 #-------------------------------------------------------------------------------
 pdf(file = "../../analysis/mutant_snp_distribution.pdf", height = 5.8, width = 8.3)
 
-snp_data %>%
+snp %>%
     plot_snp(fill_by = "mutation_type", legend_name = "Type de Mutation" ) +
     facet_grid(~mutant)
 
@@ -139,7 +139,7 @@ dev.off()
 ## compte le nombre de SNP par position. hypothèse : un SNP `calibré' génère au
 ## moins 5 SNP parmi toutes les séquences. sortie dans une table qui sert de
 ## query à la fonction =is_position=
-snp_data %>%
+snp %>%
     group_by(offset_on_subject) %>%
     summarise(count = n()) %>%
     ## qplot(data = ., offset_on_subject, count)
@@ -163,24 +163,26 @@ is_position <- function(position, table)
     ifelse(position %in% table, 'oui', 'non')
 }
 
-snp_data %>%
+snp %>%
     rowwise() %>%
     mutate(position = is_position(offset_on_subject, position_table)) %>%
     ungroup() ->
-    snp_data
+    snp
 
 ## gros résultat là.
-## on voit seulement 2 mutations S->W contre 12 W->S !
+## on voit seulement 3 mutations S->W contre 12 W->S !
 pdf(file = "../../analysis/bgc_en_action.pdf", height = 5.8, width = 8.3)
 
-snp_data %>%
+snp %>%
     filter(position == "non") %>%
-    plot_snp(fill_by = "mutation_type")
+    plot_snp(fill_by = "mutation_type") +
+    scale_y_continuous(breaks = c(1, 2)) +
+    ggtitle("Substitution aux positions inattendues : biaisees vers GC ?")
 
 dev.off()
 
 sink(file = "../../analysis/bgc_en_action.tex")
-snp_data %>%
+snp %>%
     filter(position == "non") %>%
     group_by(mutation_type) %>%
     summarise(count = n()) %>%
@@ -193,7 +195,7 @@ sink()
 
 pdf(file = "../../analysis/switch_distrib.pdf", height = 5.8, width = 8.3)
 
-snp_data %>%
+snp %>%
     ## par plasmide -- et par type de mutant
     group_by(name, mutant) %>%
     ## garde seulement les positions calibrées
@@ -234,11 +236,14 @@ is_outlier <- function(mutant, mutation_type)
     }
 }
 
-snp_data %>%
+snp %>%
+    ## par ligne, determine si la position est inattendue
     rowwise() %>%
     mutate(attendu = is_outlier(mutant, mutation_type)) %>%
     ungroup() %>%
+    ## garde les positions calibree
     filter(position == "oui") %>% 
+    ## sur lesquelles le résultat est inattendu
     filter(attendu == "non") %>%
     plot_snp(legend_position = c(0.2, 0.9)) +
     geom_text(aes(label = name, y = 0.5), check_overlap = TRUE,
@@ -248,7 +253,7 @@ snp_data %>%
 
 ## sortie des résultats dans un joli tableau latex
 sink( file = "../../analysis/outlier.tex", append = FALSE)
-snp_data %>%
+snp %>%
     rowwise() %>%
     mutate(attendu = is_outlier(mutant, mutation_type)) %>%
     ungroup() %>%
@@ -258,7 +263,7 @@ sink()
 
 ## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
 
-snp_data %>%
+snp %>%
     ## par exogene
     group_by(name) %>%
     ## garde seulement les positions attendues
@@ -266,8 +271,8 @@ snp_data %>%
     ## cherche la borne supérieure et inférieure
     summarise(min = min(offset_on_subject), max = max(offset_on_subject)) %>%
     ## combine avec la table mère
-    inner_join(snp_data, by = "name") ->
-    snp_data
+    inner_join(snp, by = "name") ->
+    snp
  
 ##' .. content for \description{} (no empty lines) ..
 ##' détermine si le SNP est dans la conversion tract ou non. 
@@ -285,7 +290,7 @@ is_inside_conv <- function(query, min, max)
 
 sink(file = "../../analysis/inside_conv.tex")
 
-snp_data %>%
+snp %>%
     rowwise() %>%
     ## détermine si on est dans la conversion tract ou non
     mutate(inside_conv = is_inside_conv(offset_on_subject, min, max)) %>%
@@ -297,6 +302,6 @@ snp_data %>%
     ## compte le nombre de snp par cas
     summarise(count = n()) %>%
     ## format en .tex
-    kable(format = "latex")
+    knitr::kable(format = "latex")
 
 sink()
