@@ -12,17 +12,18 @@
 #+name: qualité des séquences
 #+BEGIN_LaTeX
 \begin{marginfigure}
-  \includegraphics[width=\linewidth]{../untrimmed.png}
+  \includegraphics[width=\linewidth]{../per_base_quality_fastqc_untrimmed.png}
   \caption{Qualité des séquences \emph{avant} d'être trimmées et filtrées
       sur la qualité}
 \end{marginfigure}
 
 \begin{marginfigure}
-  \includegraphics[width=\linewidth]{../trimmed.png}
+  \includegraphics[width=\linewidth]{../per_base_quality_fastqc_trimmed.png}
   \caption{Qualité des séquences \emph{après} avoir été trimmées et filtrées
       sur la qualité}
 \end{marginfigure}
 #+END_LaTeX
+
 Globalement la plupart des séquences était de bonne qualité. Sur les $192$
 envoyées à séquencer, $179$ ont été retenues pour l'analyse, soit 93%.
 
@@ -34,29 +35,26 @@ généralement mal alignées. Elles ont été éliminées de l'analyse.
 ** Présence de contaminations ?
 *** dans la manip Strong
 
-|           | *SNP weak* |
-|-----------+------------|
-| <c>       | <c>        |
-| pS10-1073 | 1          |
-| pS16-1073 | 1          |
-| pS60-1073 | 22         |
-| pS74-1073 | 1          |
-| pS82-1073 | 1          |
-| pS83-1073 | 21         |
-| pS88-1073 | 1          |
-| pS91-1073 | 22         |
-| pS92-1073 | 22         |
+#+attr_latex: :font \small
+|           | *SNP weak* | *SNP strong* |
+|-----------+------------+--------------|
+| <c>       | <c>        |              |
+| pS60-1073 | 22         |              |
+| pS83-1073 | 21         |              |
+| pS91-1073 | 22         |              |
+| pS92-1073 | 22         |              |
+| pW6-1073  |            |           10 |
 
 ** Observations générales
 
-#+attr_latex: :font \small
-| *nombre de SNP par* |         |      |          |
-| *gene synthétique*  | *moyen* | *sd* | *median* |
-|---------------------+---------+------+----------|
-| <c>                 | <c>     | <c>  | <c>      |
-| global              | 14.4    | 6.4  | 15.0     |
-| strong              | 15.5    | 6.2  | 15.5     |
-| weak                | 13.3    | 6.5  | 13.0     |
+\input{../observations.tex}
+# | *nombre de SNP par* |         |      |          |
+# | *gene synthétique*  | *moyen* | *sd* | *median* |
+# |---------------------+---------+------+----------|
+# | <c>                 | <c>     | <c>  | <c>      |
+# | global              | 14.4    | 6.4  | 15.0     |
+# | strong              | 15.5    | 6.2  | 15.5     |
+# | weak                | 13.3    | 6.5  | 13.0     |
 
 ** Nombre de SNPs
 

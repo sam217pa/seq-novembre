@@ -408,7 +408,6 @@ substitution est /SW/ ; soit le transformant est G ou C, la substitution est
   ## conversion en facteur
   snp$mutation_type = factor(snp$mutation_type)
 #+END_SRC
-
 *** Graphiques globaux
 Des graphiques de distribution globale des SNP sont fait ici. 
 
@@ -483,6 +482,38 @@ Des graphiques de distribution globale des SNP sont fait ici.
       facet_grid(~mutant)
 
   dev.off()
+#+END_SRC
+
+*** Observations globales
+
+Différents tableaux de résumé généraux. 
+
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  ## =============================================================================
+  ## OBSERVATIONS GÉNÉRALES
+  ## =============================================================================
+ 
+  sink(file = "../../analysis/observations.tex")
+  snp %>%
+      group_by(mutant, name) %>%
+      summarise(count = n()) %>%
+      summarise(mean = mean(count), med = median(count), sd = sd(count) ) %>%
+      knitr::kable(format = "latex")
+  sink()
+
+  sink(file = "../../analysis/count_by_mutant.tex")
+  snp %>%
+      group_by(mutant) %>%
+      summarise(count = n()) %>%
+      knitr::kable(format = "latex")
+  sink()
+
+  sink(file = "../../analysis/count_by_muttype.tex")
+  snp %>%
+      group_by(mutation_type) %>%
+      summarise(count = n()) %>%
+      knitr::kable(format = "latex")
+  sink()
 #+END_SRC
 
 *** DONE Détermination des SNP calibrés [1/2]
