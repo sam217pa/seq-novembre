@@ -479,7 +479,7 @@ Des graphiques de distribution globale des SNP sont fait ici.
 
   snp %>%
       plot_snp(fill_by = "mutation_type", legend_name = "Type de Mutation" ) +
-      facet_grid(~mutant)
+      facet_grid(mutant ~ .)
 
   dev.off()
 #+END_SRC
@@ -498,21 +498,30 @@ Différents tableaux de résumé généraux.
       group_by(mutant, name) %>%
       summarise(count = n()) %>%
       summarise(mean = mean(count), med = median(count), sd = sd(count) ) %>%
-      knitr::kable(format = "latex")
+      knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
   sink()
 
   sink(file = "../../analysis/count_by_mutant.tex")
   snp %>%
       group_by(mutant) %>%
       summarise(count = n()) %>%
-      knitr::kable(format = "latex")
+      knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
   sink()
 
   sink(file = "../../analysis/count_by_muttype.tex")
   snp %>%
       group_by(mutation_type) %>%
       summarise(count = n()) %>%
-      knitr::kable(format = "latex")
+      knitr::kable(col.names = c("Type de mutation", "nombre"),
+                   align = 'c',
+                   booktabs = TRUE, format = "latex")
+  sink()
+
+  sink(file = "../../analysis/seq_by_mutant.tex")
+  distinct(snp, name, mutant) %>%
+      group_by(mutant) %>%
+      summarise(count = n()) %>%
+      knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
   sink()
 #+END_SRC
 
