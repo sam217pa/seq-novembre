@@ -12,4 +12,6 @@ do
         >> ../data/untrimmed.fastq
 done
 
-fastq_to_fasta -i ../data/untrimmed.fastq -o ../data/untrimmed.fasta
+## convertit le fastq en fasta
+seqret -sformat fastq -osformat fasta -auto -stdout \
+       -sequence ../data/untrimmed.fastq > ../data/untrimmed.fasta

@@ -127,9 +127,44 @@ pdf(file = "../../analysis/mutant_snp_distribution.pdf", height = 5.8, width = 8
 
 snp %>%
     plot_snp(fill_by = "mutation_type", legend_name = "Type de Mutation" ) +
-    facet_grid(~mutant)
+    facet_grid(mutant ~ .)
 
 dev.off()
+
+## =============================================================================
+## OBSERVATIONS GÉNÉRALES
+## =============================================================================
+ 
+sink(file = "../../analysis/observations.tex")
+snp %>%
+    group_by(mutant, name) %>%
+    summarise(count = n()) %>%
+    summarise(mean = mean(count), med = median(count), sd = sd(count) ) %>%
+    knitr::kable( align = 'c', digits = 2, booktabs = TRUE, format = "latex")
+sink()
+
+sink(file = "../../analysis/count_by_mutant.tex")
+snp %>%
+    group_by(mutant) %>%
+    summarise(count = n()) %>%
+    knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
+sink()
+
+sink(file = "../../analysis/count_by_muttype.tex")
+snp %>%
+    group_by(mutation_type) %>%
+    summarise(count = n()) %>%
+    knitr::kable(col.names = c("Type de mutation", "nombre"),
+                 align = 'c',
+                 booktabs = TRUE, format = "latex")
+sink()
+
+sink(file = "../../analysis/seq_by_mutant.tex")
+distinct(snp, name, mutant) %>%
+    group_by(mutant) %>%
+    summarise(count = n()) %>%
+    knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
+sink()
 
 ## ==============================================================================
 ## SNP ATTENDUS OU NON
@@ -185,8 +220,10 @@ sink(file = "../../analysis/bgc_en_action.tex")
 snp %>%
     filter(position == "non") %>%
     group_by(mutation_type) %>%
-    summarise(count = n()) %>%
-    knitr::kable(format = "latex")
+    summarise(count = n()) ->
+    bgc_en_action
+colnames(bgc_en_action) <- c("Type de Substitution", "Nombre")
+print(xtable::xtable( bgc_en_action, align = 'ccc'), include.rownames = FALSE)
 sink()
 
 ##==============================================================================

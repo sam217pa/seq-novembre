@@ -36,7 +36,6 @@ généralement mal alignées. Elles ont été éliminées de l'analyse.
 Il reste au final $83$ séquence de Strong et $87$ séquences de Weak. 
 
 ** Présence de contaminations ?
-*** dans la manip Strong
 
 #+attr_latex: :font \small
 |           | *SNP weak* | *SNP strong* |
@@ -63,7 +62,7 @@ Il y a $1236$ SNP générés par l'exogène Strong, et $1192$ SNP générés par
 Weak. \\
 #+BEGIN_LaTeX
 \begin{center}
-  {\sffamily \input{../count_by_muttype.tex}}
+  \input{../count_by_muttype.tex}
 \end{center}
 #+END_LaTeX
 
@@ -152,4 +151,31 @@ Strong, mis à part peut-être le pic dans les premiers SNP, plus fort pour le
 Weak\ldots
 
 \newpage
+* Le BGC en action ?
+
+#+BEGIN_LaTeX
+\begin{figure}
+  \centering
+  \includegraphics[width=\linewidth]{../bgc_en_action.pdf}
+  \caption{\textbf{Distribution des SNPs aux positions non-calibrées}}
+  \label{fig:bgcenaction}
+\end{figure}
+#+END_LaTeX
+
+Voilà ce que je vois : si on n'observe que les positions qui ne sont pas celles
+attendues, les substitutions sont en faveur de GC. Au contraire, lorsqu'on
+regarde les positions ``calibrées'', on a *toujours* le SNP attendu. 
+#+BEGIN_LaTeX
+\begin{center}
+  {\sffamily \input{../bgc_en_action.tex}}
+\end{center}
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{../inattendu.png}
+  \caption{Bon, sauf dans le cas de {\em ce} mutant, je n'ai pas jugé nécessaire
+    de réécrire toutes mes fonctions pour un SNP. Son cas est quand même bien
+    curieux…}
+\end{figure}
+
+#+END_LaTeX
 

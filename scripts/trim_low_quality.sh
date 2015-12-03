@@ -14,8 +14,13 @@ then # si les fichiers n'existent pas.
                           -trimq=28 \
                           -minlen=620
 
-    seqtk seq -q28 -nN ../data/trim.fastq > ../data/trimmed.fastq
-    fastq_to_fasta -i ../data/trimmed.fastq -o ../data/trimmed.fasta
+    ## convertit les bases d'une qualité inférieure à 20 en N.
+    seqtk seq -q20 -nN ../data/trim.fastq > ../data/trimmed.fastq
+
+    ## convertit le fastq en fasta
+    seqret -sformat fastq -osformat fasta -auto -stdout \
+           -sequence ../data/trimmed.fastq > ../data/trimmed.fasta
+
     rm ../data/trim.fastq
 else
     printf "Le fichier untrimmed.fastq n'existe pas, ou le fichier trimmed.fastq existe déjà."

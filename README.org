@@ -3,7 +3,7 @@
 #+end_src
 
 Le dossier contient les données du séquençage des deux plaques envoyées à la
-suite des manips d'Anne-Laure. 
+suite des manips de Florence. 
 
 * Structure
 #+BEGIN_SRC sh :results verbatim 
@@ -21,13 +21,13 @@ tree ./ -L 2
 |          | -- trimmed_fastqc.html                  | le contrôle de la qualité des séquences trimmées via fastqc                 |
 |          | -- untrimmed_fastqc.html                | le contrôle de la qualité des séquences non-trimmées via fastqc             |
 |          | -- vincent_plot.pdf                     | le graphe de vincent le jour de la réception des données.                   |
+|          | -- Analysis_Summary-Sanger_Pipeline.pdf | description du fichier d'analyse GATK                                       |
 |----------+-----------------------------------------+-----------------------------------------------------------------------------|
 | data     |                                         |                                                                             |
 |          | -- 1369607.INDEL.csv                    | le fichier envoyé par GATK                                                  |
 |          | -- 1369607.SNP.csv                      | le fichier envoyé par GATK                                                  |
 |          | -- 1369628.INDEL.csv                    | le fichier envoyé par GATK                                                  |
 |          | -- 1369628.SNP.csv                      | le fichier envoyé par GATK                                                  |
-|          | -- Analysis_Summary-Sanger_Pipeline.pdf | description du fichier d'analyse GATK                                       |
 |          | -- all.fasta                            | toutes les séquences                                                        |
 |          | -- fasta                                | dossier contenant les séquences une à une                                   |
 |          | -- fastq                                | idem en fastq                                                               |
@@ -116,14 +116,23 @@ Finalement, c'est encore un autre workflow que je veux adopter. On repart sur
 ** [2015-11-18 Wed]
 Il faut clarifier les étapes permettant d'aligner et de déterminer les SNP. Ce
 qui est fait dans le script [[./scripts/variantCallerSsaha2.sh]]. 
-
 ** [2015-11-20 Fri]
 Le rapport était basé sur une version de ma fonction =mutant_caller= dans le
 script R [[./scripts/variant_analysis.R]] qui était fausse. Très fausse. Beaucoup de
 boulot à corriger. 
 
-* Analyses 
-Contient les résultats des analyses. Graphes ou données transformées. 
+** [2015-11-28 Sat]
+La photo suivante montre le spectrogramme d'une position appelée N dans les
+alignements. Pour moi c'est la marque de l'hétérogénéité dans la colonie. Les
+uns réparent en G, les autres en A ou T.
+
+ [[./analysis/litigieux_snp.png]] 
+
+** [2015-12-03 Thu]
+J'ai cherché à extraire les données trace par trace, mais à priori il n'y a pas
+d'OSS qui permette de faire ça. On va donc utiliser la qualité comme proxy du
+polymorphisme. Ça implique de baisser le seuil d'exigence quant aux bases qu'on
+décide de renommer =N=. Donc modification du script 
 * Scripts 
 
 Contient les différents scripts nécessaires pour aboutir aux contenus
@@ -217,11 +226,16 @@ brew install emboss
           >> ../data/untrimmed.fastq
   done
 
-  fastq_to_fasta -i ../data/untrimmed.fastq -o ../data/untrimmed.fasta
+  ## convertit le fastq en fasta
+  seqret -sformat fastq -osformat fasta -auto -stdout \
+         -sequence ../data/untrimmed.fastq > ../data/untrimmed.fasta
 #+END_SRC
 
 ** Des données non-trimmées aux données trimmées et filtrées
-Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./data/trimmed.fastq]]
+Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier
+[[./data/trimmed.fastq]]. /bbduk/ trimme les bases de faible qualité. seqtk
+convertit les bases restantes de faible qualité en N, seqret convertit le fastq
+généré en fasta. 
 
 #+BEGIN_SRC sh :tangle ./scripts/trim_low_quality.sh
   #!/usr/local/bin/bash
@@ -240,8 +254,13 @@ Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier [[./dat
                             -trimq=28 \
                             -minlen=620
 
-      seqtk seq -q28 -nN ../data/trim.fastq > ../data/trimmed.fastq
-      fastq_to_fasta -i ../data/trimmed.fastq -o ../data/trimmed.fasta
+      ## convertit les bases d'une qualité inférieure à 20 en N.
+      seqtk seq -q20 -nN ../data/trim.fastq > ../data/trimmed.fastq
+
+      ## convertit le fastq en fasta
+      seqret -sformat fastq -osformat fasta -auto -stdout \
+             -sequence ../data/trimmed.fastq > ../data/trimmed.fasta
+
       rm ../data/trim.fastq
   else
       printf "Le fichier untrimmed.fastq n'existe pas, ou le fichier trimmed.fastq existe déjà."
@@ -498,7 +517,7 @@ Différents tableaux de résumé généraux.
       group_by(mutant, name) %>%
       summarise(count = n()) %>%
       summarise(mean = mean(count), med = median(count), sd = sd(count) ) %>%
-      knitr::kable( align = 'c', booktabs = TRUE, format = "latex")
+      knitr::kable( align = 'c', digits = 2, booktabs = TRUE, format = "latex")
   sink()
 
   sink(file = "../../analysis/count_by_mutant.tex")
@@ -525,11 +544,11 @@ Différents tableaux de résumé généraux.
   sink()
 #+END_SRC
 
-*** DONE Détermination des SNP calibrés [1/2]
+*** DONE Détermination des SNP calibrés [2/2]
 CLOSED: [2015-11-27 Fri 22:56]
 - [X] créer la fonction =is_a_position= qui détermine si un SNP est bien à la
   position attendu
-- [ ] faire la même chose par type de mutant
+- [X] faire la même chose par type de mutant
 On veut filtrer les positions qui sont bien les SNP calibrés. 
 
 #+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
@@ -587,8 +606,10 @@ On veut filtrer les positions qui sont bien les SNP calibrés.
   snp %>%
       filter(position == "non") %>%
       group_by(mutation_type) %>%
-      summarise(count = n()) %>%
-      knitr::kable(format = "latex")
+      summarise(count = n()) ->
+      bgc_en_action
+  colnames(bgc_en_action) <- c("Type de Substitution", "Nombre")
+  print(xtable::xtable( bgc_en_action, align = 'ccc'), include.rownames = FALSE)
   sink()
 #+END_SRC
 
@@ -692,7 +713,6 @@ des données intéressantes.
 
   ## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
 #+END_SRC
-
 *** DONE Position des SNP par rapport à la conversion tract [1/1]
 CLOSED: [2015-11-27 Fri 23:52]
 - [X] Écrire une fonction =is_inside_conv= qui détermine si un SNP est en dehors
@@ -742,6 +762,30 @@ CLOSED: [2015-11-27 Fri 23:52]
 
   sink()
 #+END_SRC
+
+*** Polymorphisme
+
+On veux étudier le polymorphisme aux positions calibrées. Comme on ne peut pas
+avoir accès aux données trace par trace, on utilise la qualité  comme proxy du
+polymorphisme. Résultat intéressant ici. 
+
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  pdf(file = "../../analysis/qualite_distrib.pdf", height = 5.8, width = 8.3)
+  snp %>%
+      filter(position == "oui") %>%
+      qplot(data = ., x = offset_on_subject, y = q_qual, color = mutant,
+            alpha = 0.1) +
+      theme_minimal(base_family = "Courier") +
+      scale_color_brewer(palette = "Set2", name = "") +
+      scale_alpha_continuous(guide = FALSE, name = "") + 
+      xlab("Position") + ylab("qualite") +
+      scale_x_continuous(breaks = position_table) +
+      theme(legend.position = c(0.5, 0.2),
+            axis.text = element_text(size = 8, colour = "gray"))
+  dev.off()
+#+END_SRC
+
+[[./analysis/qualite_distrib.pdf]]
 
 * Script Principal 
 

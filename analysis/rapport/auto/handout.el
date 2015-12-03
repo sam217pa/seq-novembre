@@ -15,6 +15,9 @@
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
+    "../observations"
+    "../count_by_muttype"
+    "../bgc_en_action"
     "tufte-handout"
     "tufte-handout10"
     "roboto"
@@ -38,24 +41,22 @@
     "zi4"
     "microtype"
     "siunitx"
-    "babel")
+    "babel"
+    "biolinum")
    (TeX-add-symbols
     "baselinestretch")
    (LaTeX-add-labels
-    "sec:orgheadline5"
+    "sec:orgheadline4"
     "sec:orgheadline1"
     "sec:orgheadline2"
     "sec:orgheadline3"
-    "sec:orgheadline4"
-    "sec:orgheadline8"
-    "sec:orgheadline6"
-    "figure1"
     "sec:orgheadline7"
-    "figure2"
-    "figure3"
-    "figure7"
-    "sec:orgheadline11"
+    "sec:orgheadline5"
+    "fig:snpdistrib"
+    "sec:orgheadline6"
+    "fig:mutsnpdistrib"
     "sec:orgheadline9"
+    "sec:orgheadline8"
     "sec:orgheadline10"
-    "figvincent")))
+    "fig:bgcenaction")))
 
