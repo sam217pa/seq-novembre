@@ -16,3 +16,13 @@ data/tmp/
 /analysis/Analysis_Summary-Sanger_Pipeline.pdf
 /*.png
 /analysis/inattendu.png
+/analysis/rapport/auto/presentation.el
+/analysis/rapport/presentation.aux
+/analysis/rapport/presentation.fdb_latexmk
+/analysis/rapport/presentation.fls
+/analysis/rapport/presentation.log
+/analysis/rapport/presentation.nav
+/analysis/rapport/presentation.out
+/analysis/rapport/presentation.snm
+/analysis/rapport/presentation.toc
+/analysis/rapport/texput.fls
