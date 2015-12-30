@@ -805,12 +805,105 @@ polymorphisme. Résultat intéressant ici.
       summarise(count = n())# %>%
       knitr::kable(format = "latex", booktabs = TRUE)
 #+END_SRC
-** Deuxième version
+** TODO Deuxième version
+Ajouter un moyen de n'analyser que les séquences précédemment filtrée dans la
+première version. Notamment sur la qualité et la longueur. Parce que ça bugge
+avec ce message d'erreur :
+#+BEGIN_EXAMPLE
+ erreur d''evaluation de l'argument 'X' lors de la s'election d'une m'ethode pour la fonction 'lapply' : Error in setAllelePhase(obj = ., refseq = ref) (from README.org[*Org Src README.org[ R ]*]!95837shv#4) :
+  Seed length not long enough. Must provide at least 10 bases of good
+           matching sequence.
+#+END_EXAMPLE
 
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
- 
+  setwd("~/stage/seq_novembre/data/tmp/")
+
+  library(sangerseqR)
+  library(Biostrings)
+
+  # la deuxième ligne du fichier reference.fasta contient la séquence de
+  # référence. Elle est convertie en un objet DNA string.
+  ref <- readLines("../reference.fasta")[2] %>%
+    DNAString()
+
+  ##' .. content for \description{} (no empty lines) ..
+  ##' Call bases on a query, based on primary and secondary traces.
+  ##' .. content for \details{} ..
+  ##' @title baseCaller
+  ##' @param query the ab1 file name.
+  ##' @param ref the reference. a DNAString object.
+  ##' @return a sangerseqR object.
+  ##' @author Samuel BARRETO
+  baseCaller <- function(query, ref)
+  {
+    readsangerseq(query) %>%
+      makeBaseCalls() %>%
+      setAllelePhase(obj = ., refseq = ref)
+  }
+
+  pW85 <- baseCaller(query = "../spectrograms/pW85-1073.ab1", ref = ref)
+
+  aligner <- function(seq, name)
+  {
+    argname <- deparse(substitute(seq))
+    pairwiseAlignment(primarySeq(seq), secondarySeq(seq),
+                      type= "global-local") %>%
+      mismatchTable() %>%
+      ## ne garde que les bases litigieuses et leur position
+      select(contains("Substring"), PatternStart) %>%
+      ## élimine les positions de faible qualité
+      filter(PatternStart > 40, PatternStart < length(primarySeq(seq)) - 40) %>%
+      mutate(name = name)
+  }
+
+  pW85_mm <- aligner(pW85)
+  pW85_mm
+
+  id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
+
+  mismatcher <- function(sequence, ref)
+  {
+    base_call <- baseCaller(query = paste0("../spectrograms/", sequence, ".ab1"), ref)
+    mismatch_call <- aligner(base_call, sequence)
+
+    mismatch_call
+  }
+
+  baseCaller(query = paste0("../spectrograms/", id_table$name[1], ".ab1"), ref)
+
+
+  rbind(
+    mismatcher(sequence = id_table$name[1], ref)
+    mismatcher(sequence = id_table$name[2], ref))
+
+  for (i in 1:length(id_table$name)) {
+
+  }
+  test_id_table <- id_table %>% sample_n(30)
+
+  result_table <- do.call(
+    rbind,
+    lapply(
+      lapply(id_table$name, function(x) mismatcher(sequence = x, ref = ref)),
+      data.frame
+    )
+  )
 #+END_SRC
 
+Un peu d'analyse.
+#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
+peakAmpMatrix(pW85) %>%
+  as.data.frame() %>%
+  tbl_df() %>%
+  mutate(pos = rownames(.)) %>%
+  gather(trace, value, V1:V4) -> peakmatrix
+
+traceMatrix(pW85) %>%
+  as.data.frame() #%>%
+  tbl_df() %>%
+  mutate(pos = rownames(.)) %>%
+  gather(trace, value, V1:V4) -> tracematrix
+#+END_SRC
 * Script Principal 
 
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
