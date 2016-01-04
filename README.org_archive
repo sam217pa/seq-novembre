@@ -47,3 +47,31 @@ positions qui sont des positions calibrées.
   dev.off()
 #+END_SRC
 
+
+* DONE ajouter un moyen de n'analyser que les séquences filtrées
+CLOSED: [2015-12-30 Wed 23:26]
+:PROPERTIES:
+:ARCHIVE_TIME: 2016-01-04 Mon 16:07
+:ARCHIVE_FILE: ~/stage/seq_novembre/README.org
+:ARCHIVE_OLPATH: Scripts/Deuxième version
+:ARCHIVE_CATEGORY: README
+:ARCHIVE_TODO: DONE
+:END:
+Ajouter un moyen de n'analyser que les séquences précédemment filtrée dans la
+première version. Notamment sur la qualité et la longueur. Parce que ça bugge
+avec ce message d'erreur :
+#+BEGIN_EXAMPLE
+ erreur d''evaluation de l'argument 'X' lors de la s'election d'une m'ethode pour la fonction 'lapply' : Error in setAllelePhase(obj = ., refseq = ref) (from README.org[*Org Src README.org[ R ]*]!95837shv#4) :
+  Seed length not long enough. Must provide at least 10 bases of good
+           matching sequence.
+#+END_EXAMPLE
+
+* DONE cleanup code
+CLOSED: [2016-01-04 Mon 16:32]
+:PROPERTIES:
+:ARCHIVE_TIME: 2016-01-04 Mon 16:32
+:ARCHIVE_FILE: ~/stage/seq_novembre/README.org
+:ARCHIVE_OLPATH: Scripts/Deuxième version
+:ARCHIVE_CATEGORY: README
+:ARCHIVE_TODO: DONE
+:END:

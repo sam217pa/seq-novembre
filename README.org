@@ -1,3 +1,7 @@
+# -*- mode: org -*-
+
+#+CATEGORY: STAGE
+
 #+begin_src emacs-lisp :results none :export none
   (org-babel-tangle-file "README.org")
 #+end_src
@@ -805,19 +809,11 @@ polymorphisme. Résultat intéressant ici.
       summarise(count = n())# %>%
       knitr::kable(format = "latex", booktabs = TRUE)
 #+END_SRC
-** TODO Deuxième version
-Ajouter un moyen de n'analyser que les séquences précédemment filtrée dans la
-première version. Notamment sur la qualité et la longueur. Parce que ça bugge
-avec ce message d'erreur :
-#+BEGIN_EXAMPLE
- erreur d''evaluation de l'argument 'X' lors de la s'election d'une m'ethode pour la fonction 'lapply' : Error in setAllelePhase(obj = ., refseq = ref) (from README.org[*Org Src README.org[ R ]*]!95837shv#4) :
-  Seed length not long enough. Must provide at least 10 bases of good
-           matching sequence.
-#+END_EXAMPLE
-
+** Deuxième version
+*** Base calling
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   setwd("~/stage/seq_novembre/data/tmp/")
-
+  library(dplyr)
   library(sangerseqR)
   library(Biostrings)
 
@@ -837,12 +833,25 @@ avec ce message d'erreur :
   baseCaller <- function(query, ref)
   {
     readsangerseq(query) %>%
-      makeBaseCalls() %>%
-      setAllelePhase(obj = ., refseq = ref)
+      makeBaseCalls(ratio = 0.5)#  %>%
+      ## setAllelePhase(obj = ., refseq = ref)
   }
 
-  pW85 <- baseCaller(query = "../spectrograms/pW85-1073.ab1", ref = ref)
+  #' TEST: pW85 <- baseCaller(query = "../spectrograms/pW85-1073.ab1", ref = ref)
+#+END_SRC
 
+*** Alignement
+#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
+  ##' .. content for \description{} (no empty lines) ..
+  ##' Aligne les données de la séquence primaire avec ceux de la séquence
+  ##' secondaire, en utilisant un algorithme TODO de type SM.
+  ##' .. content for \details{} ..
+  ##' @title aligner
+  ##' @param seq l'objet sangerseq d'intérêt.
+  ##' @param name le nom de la séquence, NSE.
+  ##' @return un tableau contenant la position, la base du pic majeur,
+  ##' la base du pic secondaire et le nom de la séquence.
+  ##' @author Samuel BARRETO
   aligner <- function(seq, name)
   {
     argname <- deparse(substitute(seq))
@@ -850,36 +859,52 @@ avec ce message d'erreur :
                       type= "global-local") %>%
       mismatchTable() %>%
       ## ne garde que les bases litigieuses et leur position
-      select(contains("Substring"), PatternStart) %>%
-      ## élimine les positions de faible qualité
-      filter(PatternStart > 40, PatternStart < length(primarySeq(seq)) - 40) %>%
-      mutate(name = name)
+      select(primaire   = PatternSubstring,
+             secondaire = SubjectSubstring,
+             position   = PatternStart) %>%
+      ## trim les positions de faible qualité
+      filter(position > 40, # première position de bonne qualité
+             position < length(primarySeq(seq)) - 40) %>% # dernière position de bonne qualité.
+      mutate(name = name) # ajoute une colonne avec le nom de la séquence.
   }
 
-  pW85_mm <- aligner(pW85)
+  pW85_mm <- aligner(pW85, "pW85")
   pW85_mm
 
-  id_table <- tbl_df(read.table("../id_table.dat", head = TRUE))
+#+END_SRC
 
+*** Pooling
+#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
+
+  id_table <- tbl_df(read.table("../id_table.dat", stringsAsFactors = FALSE, head = TRUE))
+  ## rebascule les données litigieuses dans les bonnes catégories
+  ## voir les premiers scripts.
+  id_table$mutant[id_table$name == "pS60-1073"] <- "weak"
+  id_table$mutant[id_table$name == "pS83-1073"] <- "weak"
+  id_table$mutant[id_table$name == "pS92-1073"] <- "weak"
+  id_table$mutant[id_table$name == "pS91-1073"] <- "weak"
+  id_table$mutant[id_table$name == "pW6-1073" ] <- "strong"
+  ## élimine les fichiers aux données manquantes
+  id_table <- filter(id_table, name != "pS6-1073", name != "pS9-1073")
+
+  ##' .. content for \description{} (no empty lines) ..
+  ##' Appelle les bases principales et secondaires par fichier,
+  ##' et aligne avec la séquence de référence.
+  ##' .. content for \details{} ..
+  ##' @title mismatcher
+  ##' @param sequence char, le nom de la séquence.
+  ##' @param ref DNAString, la séquence de référence.
+  ##' @return
+  ##' @author Samuel BARRETO
   mismatcher <- function(sequence, ref)
   {
-    base_call <- baseCaller(query = paste0("../spectrograms/", sequence, ".ab1"), ref)
-    mismatch_call <- aligner(base_call, sequence)
-
-    mismatch_call
+    baseCaller(query = paste0("../spectrograms/", sequence, ".ab1"), ref) %>%
+    aligner(., sequence)
   }
 
-  baseCaller(query = paste0("../spectrograms/", id_table$name[1], ".ab1"), ref)
 
-
-  rbind(
-    mismatcher(sequence = id_table$name[1], ref)
-    mismatcher(sequence = id_table$name[2], ref))
-
-  for (i in 1:length(id_table$name)) {
-
-  }
-  test_id_table <- id_table %>% sample_n(30)
+  ## baseCaller(query = paste0("../spectrograms/", id_table$name[1], ".ab1"), ref)
+  ## test_id_table <- id_table %>% sample_n(30)
 
   result_table <- do.call(
     rbind,
@@ -888,9 +913,58 @@ avec ce message d'erreur :
       data.frame
     )
   )
+
+  write.csv(result_table, file = "result_table")
+
+  result_table %>%
+    tbl_df() %>%
+    inner_join(id_table, by = "name") %>%
+    filter(mutant == "strong") %>%
+    print()
+
 #+END_SRC
 
-Un peu d'analyse.
+*** Sens des mutations
+#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
+  iupac_code <-
+  "
+  iupac,meaning
+  A,A
+  C,C
+  G,G
+  T,T
+  M,AC
+  R,AG
+  W,AT
+  S,CG
+  Y,CT
+  K,GT
+  V,ACG
+  H,ACT
+  D,AGT
+  B,CGT
+  X,GATC
+  N,GATC
+  "
+  read.csv(text = iupac_code, stringsAsFactors = FALSE) %>% tbl_df() -> iupac
+
+  is_iupac <- function(base) ifelse(base %in% c("A", "T", "C", "G"), FALSE, TRUE)
+
+  iupacker <- function(subject, query)
+  {
+
+    lapply(
+      str_split(paste0(subject, query), ""),
+      sort)
+  }
+
+  result_table %>%
+    filter( is_iupac(SubjectSubstring)) %>%
+    inner_join(y = iupac, by = c("SubjectSubstring" = "iupac"))
+
+#+END_SRC
+
+*** Analyses
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
 peakAmpMatrix(pW85) %>%
   as.data.frame() %>%
@@ -904,7 +978,8 @@ traceMatrix(pW85) %>%
   mutate(pos = rownames(.)) %>%
   gather(trace, value, V1:V4) -> tracematrix
 #+END_SRC
-* Script Principal 
+
+* Script Principal
 
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
   cd ~/stage/seq_novembre/scripts
@@ -935,3 +1010,6 @@ traceMatrix(pW85) %>%
   Rscript variant_analysis.R                     # analyses et graphiques 
 #+END_SRC
 
+
+* configuration                                                                 :CONFIG:
+#+TODO: TODO FIX! | DONE
