@@ -350,7 +350,7 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
 **** Lecture des données et nettoyage
 Le fichier [[~/stage/seq_novembre/data/variantCalling/snp_calling.dat]] contient les
 données d'intérêt. Il ne contient ni le nom du transformant, ni son type (Weak
-ou Strong). Les données sont récupérées dans le fichier [[data/id_table.dat]]. Les
+ou Strong). Les données sont récupérées dans le fichier [[./data/id_table.dat]]. Les
 deux tables sont associés via un /inner_join/. 
 
 On s'est rendu compte que le plasmide ~pS60~ était un contaminant, toutes les
@@ -810,6 +810,13 @@ polymorphisme. Résultat intéressant ici.
       knitr::kable(format = "latex", booktabs = TRUE)
 #+END_SRC
 ** Deuxième version
+
+Le but est d'obtenir un tableau qui aurait la forme suivante :
+
+|  A | C | T |   G | majeur | maj_score | mineur | min_score | ratio | position | gene_synt | wt |
+|----+---+---+-----+--------+-----------+--------+-----------+-------+----------+-----------+----|
+| 90 | 0 | 0 | 120 | G      |       120 | A      |        90 |   120 |      437 | G         | A  |
+
 *** Base calling
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   setwd("~/stage/seq_novembre/data/tmp/")
@@ -837,7 +844,71 @@ polymorphisme. Résultat intéressant ici.
       ## setAllelePhase(obj = ., refseq = ref)
   }
 
-  #' TEST: pW85 <- baseCaller(query = "../spectrograms/pW85-1073.ab1", ref = ref)
+  pW85 <- baseCaller(query = "../spectrograms/pW85-1073.ab1", ref = ref) #TEST:
+
+  pairwiseAlignment(pattern = c(primarySeq(pw86),
+                                secondarySeq(pw86),
+                                primarySeq(pW85),
+                                secondarySeq(pW85)),
+                    subject = reverseComplement(ref),
+                    type = "local-global") ->
+    test_pa
+
+
+  data <- peakAmpMatrix(pW85) %>%
+    as.data.frame() %>%
+    select(A = V1, C = V2, G = V3, T = V4) %>%
+    tbl_df()
+
+  ##' .. content for \description{} (no empty lines) ..
+  ##' Attribue le nom des bases à chaque trace.
+  ##' .. content for \details{} ..
+  ##' @title get_peak_matrix
+  ##' @param  obj un objet sangerseq. 
+  ##' @return tbl_df object
+  ##' @author Samuel BARRETO
+  get_peak_matrix <- function(obj)
+  {
+    obj %>%
+      peakAmpMatrix() %>%
+      as.data.frame() %>%
+      select(A = V1, C = V2, G = V3, T = V4) %>%
+      tbl_df()
+  }
+
+  ##' .. content for \description{} (no empty lines) ..
+  ##' 
+  ##' Une fonction qui permet de déterminer la base qui a le pic le plus haut, la
+  ##' hauteur de son pic, la base avec le second pic le plus haut, la hauteur de
+  ##' ce pic, et le ratio des deux, ainsi que la position dans le référentiel de
+  ##' la séquence.
+  ##' 
+  ##' .. content for \details{} ..
+  ##' @title get_score_matrix
+  ##' @param data typiquement une dataframe crée avec get_peak_matrix()
+  ##' @return une dataframe
+  ##' @author Samuel BARRETO
+  get_score_matrix <- function(data)
+  {
+    data.frame(
+      ## renvoit un vecteur avec le nom des bases avec le pic le plus haut        
+      primaire = apply(data, 1, function(n) which.max(n) %>% names()),
+      ## renvoit un vecteur avec le score du pic le plus haut
+      prim_score = apply(data, 1, function(n) max(n)),
+      ## renvoit un vecteur avec le nom des bases au second pic
+      second = apply(data, 1, function(n) which.max(n[n!=max(n)]) %>% names()),
+      ## renvoit un vecteur avec le score du second pic 
+      sec_score = apply(data, 1, function(n) 
+        sort(n, partial = length(n) - 1)[length(n) - 1])
+    ) %>%
+      mutate(ratio = sec_score / prim_score,
+             seq_position = row.names(.))
+  }
+
+  pW85 %>%
+    get_peak_matrix() %>%
+    get_score_matrix() %>%
+    head()
 #+END_SRC
 
 *** Alignement
@@ -926,6 +997,9 @@ polymorphisme. Résultat intéressant ici.
 
 *** Sens des mutations
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
+
+#+TODO: ?mergeIUPACLetters
+
   iupac_code <-
   "
   iupac,meaning
