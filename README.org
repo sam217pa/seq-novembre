@@ -1,6 +1,8 @@
-# -*- mode: org -*-
+# -*- mode: org; -*-
 
 #+CATEGORY: STAGE
+
+#+TOC: headlines 3
 
 #+begin_src emacs-lisp :results none :export none
   (org-babel-tangle-file "README.org")
@@ -10,6 +12,8 @@ Le dossier contient les données du séquençage des deux plaques envoyées à l
 suite des manips de Florence. 
 
 * Analyse globale des SNP 
+#+TOC: headlines 1 local  insert local TOC, with direct children only
+
 [2016-01-06 Wed] La première approche globale consistait à extraire les données
 de séquence des fichiers .ab1 contenant les spectrogrammes et de les
 convertir en fastq, de façon à conserver l'information de qualité du pic. Les
@@ -649,7 +653,6 @@ CLOSED: [2015-11-27 Fri 23:52]
       knitr::kable(format = "latex", booktabs = TRUE)
   sink()
 #+END_SRC
-
 *** Polymorphisme [2/2]
 En analysant visuellement les spectrogrammes aux positions de SNP attendues, on
 s'est rendu compte qu'il persistait des variants, et notamment chez les
@@ -721,6 +724,10 @@ CLOSED: [2016-01-06 Wed 08:22]
 
 --- 
 
+*** Sauvegarde du tableur
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
+  write.csv(snp, file = "snp_table.csv", quote = FALSE)
+#+END_SRC
 * Analyse des positions hétérozygotes
 L'approche précédente utilisait la qualité comme proxy du polymorphisme aux
 positions de SNP attendues. Dans cette seconde approche, le but est de
@@ -1064,7 +1071,10 @@ La photo suivante montre le spectrogramme d'une position appelée N dans les
 alignements. Pour moi c'est la marque de l'hétérogénéité dans la colonie. Les
 uns réparent en G, les autres en A ou T.
 
- [[./analysis/litigieux_snp.png]] 
+On peut clairement voir que la base appelée est le T, mais qu'il persiste un G
+dans à cette position. 30 bases plus loin, idem, un T est appelée mais un C persiste. 
+
+ [[./analysis/weak_spectro.png]] 
 
 ** [2015-12-03 Thu]
 J'ai cherché à extraire les données trace par trace, mais à priori il n'y a pas
