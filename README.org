@@ -12,18 +12,18 @@ Le dossier contient les données du séquençage des deux plaques envoyées à l
 suite des manips de Florence. 
 
 * Analyse globale des SNP 
-#+TOC: headlines 1 local  insert local TOC, with direct children only
+#+TOC: headlines 2 local
 
-[2016-01-06 Wed] La première approche globale consistait à extraire les données
-de séquence des fichiers .ab1 contenant les spectrogrammes et de les
-convertir en fastq, de façon à conserver l'information de qualité du pic. Les
-séquences sont ensuite trimmées, pour ne conserver que les positions dont la
-qualité est suffisante. La qualité des séquences obtenues est contrôlée avant et
-après trimming. 
+[2016-01-06 Wed] La première approche globale consiste à extraire les données
+de séquence des fichiers .ab1 contenant les spectrogrammes et de les convertir
+en fastq, de façon à conserver l'information de qualité du pic. Les séquences
+sont ensuite trimmées, pour ne conserver que les positions dont la qualité est
+suffisante. La qualité des séquences obtenues est contrôlée avant et après
+trimming.
 
 Les séquences fastq obtenues sont ensuite poolées dans un même fichier
-~trimmed.fastq~, et alignée avec la séquence de référence. Les positions de SNP
-sont inférées. Le tableau de donnée obtenu est analysée dans ~R~. 
+~trimmed.fastq~, et alignées avec la séquence de référence. Les positions de SNP
+sont inférées. Le tableau de donnée obtenu est analysée dans ~R~.
 ** Extraction des données brutes
 Pour extraire les données du fichier brut .zip à la structure de données.
 
@@ -124,8 +124,8 @@ brew install emboss
 
 ** Des données non-trimmées aux données trimmées et filtrées
 Un script qui convertit le fichier [[./data/untrimmed.fastq]] en fichier
-[[./data/trimmed.fastq]]. /bbduk/ trimme les bases de faible qualité. seqtk
-convertit les bases restantes de faible qualité en N, seqret convertit le fastq
+[[./data/trimmed.fastq]]. /bbduk/ trimme les bases de faible qualité. /seqtk/
+convertit les bases restantes de faible qualité en N, /seqret/ convertit le fastq
 généré en fasta. 
 
 #+BEGIN_SRC sh :tangle ./scripts/trim_low_quality.sh
@@ -234,7 +234,10 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
 #+END_SRC
 
 ** Analyse des variants
-*** Lecture des données et nettoyage
+*** TODO Lecture des données et nettoyage
+- [ ] nettoyer la partie "-1073" en trop dans les noms de séquence, et vérifier
+  au long du code que ça ne pose pas de problème.
+
 Le fichier [[~/stage/seq_novembre/data/variantCalling/snp_calling.dat]] contient les
 données d'intérêt. Il ne contient ni le nom du transformant, ni son type (Weak
 ou Strong). Les données sont récupérées dans le fichier [[./data/id_table.dat]]. Les
@@ -540,7 +543,7 @@ positions qui sont des positions calibrées.
   dev.off()
 #+END_SRC
 
-*** DONE SNP inattendus [1/1]
+*** DONE Néomutations [1/1]
 CLOSED: [2015-11-27 Fri 23:53]
 - [X] rajouter le filtre sur les positions calibrées. 
 
@@ -606,6 +609,37 @@ des données intéressantes.
 
   ## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
 #+END_SRC
+
+La liste des constructions qui montrent des néo-mutations :
+#+BEGIN_SRC R 
+  library(dplyr)
+
+  read.csv("~/stage/seq_novembre/data/variantCalling/snp_table.csv") %>%
+    filter(position == "non") %>%
+    select(name) %>%
+    unique()
+#+END_SRC
+
+#+RESULTS:
+| pS10-1073 |
+| pS24-1073 |
+| pS30-1073 |
+| pS39-1073 |
+| pS5-1073  |
+| pS54-1073 |
+| pS74-1073 |
+| pS82-1073 |
+| pS88-1073 |
+| pW14-1073 |
+| pW19-1073 |
+| pW2-1073  |
+| pW23-1073 |
+| pW35-1073 |
+| pW6-1073  |
+| pW81-1073 |
+| pW87-1073 |
+| pW93-1073 |
+
 *** DONE Position des SNP par rapport à la conversion tract [1/1]
 CLOSED: [2015-11-27 Fri 23:52]
 - [X] Écrire une fonction =is_inside_conv= qui détermine si un SNP est en dehors
@@ -720,6 +754,40 @@ CLOSED: [2016-01-06 Wed 08:22]
       group_by(mutant) %>%
       summarise(count = n())# %>%
       knitr::kable(format = "latex", booktabs = TRUE)
+
+  snp %>%
+    mutate(name = gsub("-1073", "", x = name)) %>%
+    filter(position == "oui", q_qual < 40, offset_on_subject < 600) %>%
+    group_by(name) %>%
+    summarise(count = n()) -> #%>%
+    ## filter(count > 1) ->
+    candidats
+
+  snp %>%
+    filter(name == "pW6-1073") %>%
+    qplot(data = .,
+          x = offset_on_subject,
+          y = q_qual,
+          geom = "line",
+          xlim = c(0, 750)) +
+    geom_vline( xintercept = 456, color = "red") +
+    geom_vline(xintercept = position_table,
+               color = "blue",
+               alpha = 0.2)
+
+  snp %>%
+    mutate(name = gsub("-1073", "", x = name)) %>%
+    filter(name %in% candidats$name) %>%
+    ggplot(data = .,
+           aes(x = offset_on_subject, y = q_qual,
+               colour = name)) +
+    geom_line() +
+    facet_grid(name~mutant) +
+    theme_minimal() +
+    theme(text = element_text(size = 6))
+
+  ggsave(filename = "~/stage/seq_novembre/analysis/candidats_heterozygotes.pdf",
+         width = 29.7, height = 21, units = "cm")
 #+END_SRC
 
 --- 
@@ -759,7 +827,8 @@ deux scores de confiance.
   ## la deuxième ligne du fichier reference.fasta contient la séquence de
   ## référence. Elle est convertie en un objet DNA string.
   ref <- readLines("../reference.fasta")[2] %>%
-    DNAString()
+    DNAString() %>%
+    reverseComplement()
 
   ##' .. content for \description{} (no empty lines) ..
   ##' Call bases on a query, based on primary and secondary traces.
@@ -811,21 +880,60 @@ deux scores de confiance.
       ## renvoit un vecteur avec le score du pic le plus haut
       prim_score = apply(data, 1, function(n) max(n)),
       ## renvoit un vecteur avec le nom des bases au second pic
-      second = apply(data, 1, function(n) which.max(n[n!=max(n)]) %>% names()),
+      second = apply(data, 1, function(n) which.max(n[n != max(n)]) %>% names()),
       ## renvoit un vecteur avec le score du second pic 
-      sec_score = apply(data, 1, function(n) 
-        sort(n, partial = length(n) - 1)[length(n) - 1])
+      sec_score = apply(data, 1, function(n) sort(n)[length(n) - 1])
     ) %>%
       mutate(ratio = sec_score / prim_score,
-             seq_position = row.names(.))
+             seq_position = row.names(.) %>% as.numeric())
   }
 
   pW85 %>%
     get_peak_matrix() %>%
     get_score_matrix() %>%
-    head()
+    tbl_df() ->
+    test_data
+
+  theme_set(theme_minimal())
+
+  test_data %>%
+    ggplot(aes(x = seq_position, y = prim_score)) +
+    geom_path(aes(color = primaire)) +
+    geom_path(aes(y = sec_score, color = second)) +
+    facet_grid(primaire ~ .) 
+    ## xlim(c(180, 220))
+
 #+END_SRC
 
+#+BEGIN_SRC sh :tangle ./scripts/base-call-phred.sh
+  #!/usr/local/bin/bash
+
+  #### PHRED BASE CALLING
+
+  ### utilise phred pour le base call des spectrogrammes. Ce qui nous interésse
+  ### ici n'est pas tant le base call en soi que les contrôles de qualité et
+  ### surtout la détection des bases polymorphes.
+
+  cd ~/stage/seq_novembre/data/
+
+  # NOT RUN : mkdir quality phred poly
+
+  phred \
+      ## emplacement des fichiers
+      -id ./spectrograms \
+      ## trim les bases à gauche et droite en fonction de la qualité
+      -trim_alt \
+      ## selon la probabilité d'erreur suivante.
+      -trim_cutoff 0.05 \
+      ## écrit les séquences trimmées dans un fichier phred
+      -trim_phd \
+      ## sortie des fichiers de qualité dans le dossier quality au format .qual
+      -qd ./quality \
+      ## sortie des séquences dans le dossier quality au format .qual
+      -pd ./phred \
+      ## sortie des positions polymporphiques dans le dossier poly.
+      -dd ./poly
+#+END_SRC
 ** Alignement
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   ##' .. content for \description{} (no empty lines) ..
