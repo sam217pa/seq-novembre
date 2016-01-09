@@ -2,7 +2,7 @@
 
 #+CATEGORY: STAGE
 
-#+TOC: headlines 3
+# #+TOC: headlines 1
 
 #+begin_src emacs-lisp :results none :export none
   (org-babel-tangle-file "README.org")
@@ -12,7 +12,7 @@ Le dossier contient les données du séquençage des deux plaques envoyées à l
 suite des manips de Florence. 
 
 * Analyse globale des SNP 
-#+TOC: headlines 2 local
+# #+TOC: headlines 2 local
 
 [2016-01-06 Wed] La première approche globale consiste à extraire les données
 de séquence des fichiers .ab1 contenant les spectrogrammes et de les convertir
@@ -473,19 +473,20 @@ On veut filtrer les positions qui sont bien les SNP calibrés.
   ##' @param table 
   ##' @return "oui" ou "non"
   ##' @author Samuel Barreto
-  is_position <- function(position, table)
-  {
-      ifelse(position %in% table, 'oui', 'non')
-  }
+  is_position <- function(position, table) ifelse(position %in% table, 'oui', 'non')
+
 
   snp %>%
       rowwise() %>%
       mutate(position = is_position(offset_on_subject, position_table)) %>%
       ungroup() ->
       snp
+#+END_SRC
 
-  ## gros résultat là.
-  ## on voit seulement 3 mutations S->W contre 12 W->S !
+Le graphique suivant représente la distribution des SNP aux positions
+inattendues. 
+
+#+BEGIN_SRC R :tangle ./scripts/variant_analysis.R
   pdf(file = "../../analysis/bgc_en_action.pdf", height = 5.8, width = 8.3)
   snp %>%
       filter(position == "non") %>%
@@ -507,6 +508,7 @@ On veut filtrer les positions qui sont bien les SNP calibrés.
   sink()
 #+END_SRC
 
+[[file:analysis/bgc_en_action.pdf]]
 *** TODO Positions terminales de switch [1/3]
 - [ ] voir le test à utiliser pour comparer les distributions
 - [ ] comparer les distributions statistiquement, si $n$ est suffisamment grand. 
@@ -797,6 +799,8 @@ CLOSED: [2016-01-06 Wed 08:22]
   write.csv(snp, file = "snp_table.csv", quote = FALSE)
 #+END_SRC
 * Analyse des positions hétérozygotes
+# #+TOC: headlines 2 local
+
 L'approche précédente utilisait la qualité comme proxy du polymorphisme aux
 positions de SNP attendues. Dans cette seconde approche, le but est de
 déterminer la nature du pic parasite, et de déterminer s'il correspond ou non à
@@ -808,11 +812,17 @@ Le but est d'obtenir un tableau qui aurait la forme suivante :
 |----+---+---+-----+------+------------+-----+-----------+-------+----------+-----------+----|
 | 90 | 0 | 0 | 120 | G    |        120 | A   |        90 |   120 |      437 | G         | A  |
 
+Le programme [[http://www.nybg.org/files/scientists/dlittle/polySNP.html][polySNP]] fait ça justement.
+ 
 ** Base calling
 Le but de cet étape est de déterminer, pour chaque position, par séquence, qui
 est la base majoritaire, la confiance qu'on peut lui attribuer, la base
 secondaire, la confiance qu'on peut lui attribuer, ainsi que le ratio des
 deux scores de confiance. 
+
+*** via sangerseqR
+Dans un premier temps, j'ai voulu prototypé l'analyse et le résultat attendu
+dans R, en utilisant le package ~sangerseqR~ (voir la documentation [[https://www.bioconductor.org/packages/release/bioc/html/sangerseqR.html][là]]). 
 
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   ## ------------------------------------------------------------------------------
@@ -905,6 +915,14 @@ deux scores de confiance.
 
 #+END_SRC
 
+*** via phred
+Brent Ewing m'a ensuite envoyé le code source de phred [2016-01-08 Fri], que
+j'ai pu installer sur le mac et sur la virtualbox biolinux. C'est l'une des
+dépendances principale de ~polySNP~, un programme qui permet de produire
+exactement le résultat sous la forme attendue.
+
+Le script suivant effectue le base-calling avec phred directement. 
+
 #+BEGIN_SRC sh :tangle ./scripts/base-call-phred.sh
   #!/usr/local/bin/bash
 
@@ -934,6 +952,26 @@ deux scores de confiance.
       ## sortie des positions polymporphiques dans le dossier poly.
       -dd ./poly
 #+END_SRC
+
+*** via polySNP
+PolySNP effectue exactement le même procédé. Il nécessite une étape antérieure
+d'alignement entre deux séquences, la séquence sauvage et la séquence porteuse
+des SNP, au format fasta. Le but est de déduire les positions de SNP, pour
+ensuite aligner les séquences en sortie de phred avec cet alignement de
+référence.
+
+Cet alignement est effectué avec le programme EMBOSS ~needle~, qui utilise
+l'algorithme de Needleman-Wunsch. L'alignement se fait sur toute la longueur des
+séquences.
+
+**** alignement des références
+#+BEGIN_SRC sh :tangle ./scripts/aligne_reference_snp.sh
+#!/usr/bin/bash
+## TODO
+##
+#+END_SRC
+
+ Dans une deuxième étape
 ** Alignement
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   ##' .. content for \description{} (no empty lines) ..
@@ -1241,6 +1279,7 @@ tree ./ -L 2
 |          | -- variant_analysis.R                   | l'analyse des variants et les graphes qui vont avec                         |
 
 
-* configuration                                                                 :CONFIG:
+* configuration                                                                 :noexport:
 #+TODO: TODO FIX! | DONE
-#+OPTIONS: num:t H:4
+# #+OPTIONS: num:t H:4
+#+OPTIONS: toc:3
