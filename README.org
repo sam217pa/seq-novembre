@@ -241,7 +241,7 @@ Le script utilisé pour analyser les données de qualité via /fastqc/.
 Le fichier [[~/stage/seq_novembre/data/variantCalling/snp_calling.dat]] contient les
 données d'intérêt. Il ne contient ni le nom du transformant, ni son type (Weak
 ou Strong). Les données sont récupérées dans le fichier [[./data/id_table.dat]]. Les
-deux tables sont associés via un /inner_join/. 
+deux tables sont associés via un /inner-join/. 
 
 On s'est rendu compte que le plasmide ~pS60~ était un contaminant, toutes les
 mutations qu'il engendre sont de type /weak/. Il est donc rebasculé dans le
@@ -346,7 +346,6 @@ Des graphiques de distribution globale des SNP sont fait ici.
   ##' @param legend_position la position de la légende sur le graphe
   ##' @param legend_name le titre de la légende. rien par défault
   ##' @return un graphique
-  ##' @author Samuel Barreto
   plot_snp <- function(data, fill_by = "mutant",
                                     legend_position = c(0.2, 0.8),
                                     legend_name = "")
@@ -472,7 +471,6 @@ On veut filtrer les positions qui sont bien les SNP calibrés.
   ##' @param position 
   ##' @param table 
   ##' @return "oui" ou "non"
-  ##' @author Samuel Barreto
   is_position <- function(position, table) ifelse(position %in% table, 'oui', 'non')
 
 
@@ -570,7 +568,6 @@ des données intéressantes.
   ##' @param mutant : le type de mutant
   ##' @param mutation_type : le type de substitution
   ##' @return 
-  ##' @author Samuel Barreto
   is_outlier <- function(mutant, mutation_type)
   {
       if (mutant == 'strong' && mutation_type == 'SW') {
@@ -667,7 +664,6 @@ CLOSED: [2015-11-27 Fri 23:52]
   ##' @param min la borne inférieure de la conversion tract
   ##' @param max la borne supérieure de la conversion tract
   ##' @return oui ou non
-  ##' @author Samuel Barreto
   is_inside_conv <- function(query, min, max)
   {
       ifelse(min <= query & query <= max, "oui", "non")
@@ -966,12 +962,103 @@ séquences.
 
 **** alignement des références
 #+BEGIN_SRC sh :tangle ./scripts/aligne_reference_snp.sh
-#!/usr/bin/bash
-## TODO
-##
+  #!/usr/bin/bash
+  ##
+  ##
+  cd ~/stage/seq_novembre/data
+
+  needle \
+      -asequence ./ref/wt.fasta \
+      -sformat1 fasta \
+      -bsequence ./ref/strong.fasta \
+      -sformat2 fasta \
+      -outfile ./ref/aln-strong-wt.fasta\
+      -aformat3 fasta \
+      -gapopen 10.0 \ # pénalité d'ouverture de gap
+      -gapextend 0.5 # pénalité d'extension de gap
+
+  needle \
+      -asequence ./ref/wt.fasta \
+      -sformat1 fasta \
+      -bsequence ./ref/weak.fasta \
+      -sformat2 fasta \
+      -outfile ./ref/aln-weak-wt.fasta\
+      -aformat3 fasta \
+      -gapopen 10.0 \
+      -gapextend 0.5
 #+END_SRC
 
  Dans une deuxième étape
+ 
+**** polySNP
+
+Étant donné la façon dont polySNP traite les chemins de fichiers, il faut que
+les fichiers en cours d'analyse soient dans le dossier courant.
+
+- [ ] peut-être utiliser des softlinks, ou alors carrément copier les différents
+  documents dans un dossier de travail réservé.
+
+#+BEGIN_SRC sh :tangle scripts/polysniper.sh
+  #!/usr/bin/bash 
+
+  ####
+  #### POLYSNP
+  ###
+  ### le script qui effectue le base-calling via phred, qui détermine les
+  ### positions de SNP qui sont aux positions attendues d'après les alignements de
+  ### référence, et qui détermine pour chaque position attendue les deux bases
+  ### appelées à chaque pic.
+
+  cd ~/stage/seq_novembre/data/tmp_snp
+
+  ## copie l'alignement référence dans .
+  cp ../ref/aln-weak-wt.fst .
+
+  for spectro in ../spectrogrammes/pW*.ab1;
+  do
+      cp $file .
+      polySNP \
+          -r aln-weak-wt.fst \
+          -t $file \
+          # base call and trim with phred
+          -p 0 \
+          # cutoff optionnel de trimming
+          -c 0.05
+      rm ./`basename $file`
+  done
+#+END_SRC
+
+La documentation du programme =polySNP=. 
+
+#+BEGIN_QUOTE
+“reference_file” is a FASTA format file containing two aligned sequences (SNPs
+will be inferred)
+
+“trace_file” is a chromatogram file readable by PHRED or convert_trace
+
+“standard_curve_file” is a CSV text file containing reference position (in
+“reference_file”), reference base, slope (decimal notation), y–intercept
+
+~-l~ outputs a line of data labels before outputting the data
+
+~-a~ outputs the alignment along with the data
+
+~-p~ 0 base call and trim with PHRED, use PHRED values for peak area measurement
+-(default)
+
+~-p~ 1 base call and trim with PHRED, use PHRED values for peak height
+-measurement
+
+~-p~ 2 base call and trim with PHRED, use BIO::SCF values for peak height
+-measurment
+
+~-p~ 3 use existing base calls, trim with qclip, use BIO::SCF values for peak
+-height measurement
+
+For ~-p~ 0, 1, or 2 an optional ~-c~ 0.XX argument can be appended to specify the
+PHRED “-trim_cutoff” value. If no ~-c~ 0.XX value is specified, the script
+defaults to 0.10.
+#+END_QUOTE
 ** Alignement
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
   ##' .. content for \description{} (no empty lines) ..
@@ -983,7 +1070,6 @@ séquences.
   ##' @param name le nom de la séquence, NSE.
   ##' @return un tableau contenant la position, la base du pic majeur,
   ##' la base du pic secondaire et le nom de la séquence.
-  ##' @author Samuel BARRETO
   aligner <- function(seq, name)
   {
     argname <- deparse(substitute(seq))
@@ -1027,7 +1113,6 @@ séquences.
   ##' @param sequence char, le nom de la séquence.
   ##' @param ref DNAString, la séquence de référence.
   ##' @return
-  ##' @author Samuel BARRETO
   mismatcher <- function(sequence, ref)
   {
     baseCaller(query = paste0("../spectrograms/", sequence, ".ab1"), ref) %>%
@@ -1114,7 +1199,6 @@ traceMatrix(pW85) %>%
   gather(trace, value, V1:V4) -> tracematrix
 #+END_SRC
 
---- 
 
 * Script Principal
 

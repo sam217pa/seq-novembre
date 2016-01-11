@@ -81,7 +81,6 @@ library(ggplot2)
 ##' @param legend_position la position de la légende sur le graphe
 ##' @param legend_name le titre de la légende. rien par défault
 ##' @return un graphique
-##' @author Samuel Barreto
 plot_snp <- function(data, fill_by = "mutant",
                                   legend_position = c(0.2, 0.8),
                                   legend_name = "")
@@ -192,11 +191,8 @@ snp %>%
 ##' @param position 
 ##' @param table 
 ##' @return "oui" ou "non"
-##' @author Samuel Barreto
-is_position <- function(position, table)
-{
-    ifelse(position %in% table, 'oui', 'non')
-}
+is_position <- function(position, table) ifelse(position %in% table, 'oui', 'non')
+
 
 snp %>%
     rowwise() %>%
@@ -204,16 +200,14 @@ snp %>%
     ungroup() ->
     snp
 
-## gros résultat là.
-## on voit seulement 3 mutations S->W contre 12 W->S !
 pdf(file = "../../analysis/bgc_en_action.pdf", height = 5.8, width = 8.3)
-
 snp %>%
     filter(position == "non") %>%
     plot_snp(fill_by = "mutation_type") +
     scale_y_continuous(breaks = c(1, 2)) +
-    ggtitle("Substitution aux positions inattendues : biaisees vers GC ?")
-
+    scale_x_continuous(breaks = position_table, name = waiver()) +
+    ggtitle("Substitution aux positions inattendues : biaisees vers GC ?") +
+    theme(panel.grid.major.x = element_line(colour = "gray"))
 dev.off()
 
 sink(file = "../../analysis/bgc_en_action.tex")
@@ -261,7 +255,6 @@ dev.off()
 ##' @param mutant : le type de mutant
 ##' @param mutation_type : le type de substitution
 ##' @return 
-##' @author Samuel Barreto
 is_outlier <- function(mutant, mutation_type)
 {
     if (mutant == 'strong' && mutation_type == 'SW') {
@@ -295,7 +288,9 @@ snp %>%
     mutate(attendu = is_outlier(mutant, mutation_type)) %>%
     ungroup() %>%
     filter(attendu == "non") %>%
-    knitr::kable(format = "latex")
+    mutate(position = offset_on_subject, ref = s_base, read = q_base) %>%
+    select(-read_name, -offset_on_subject, -s_base, -q_base) %>%
+    knitr::kable(format = "latex", booktabs = TRUE)
 sink()
 
 ## pdf(file = "../../analysis/outliers.pdf", width = 4, height = 2)
@@ -319,14 +314,12 @@ snp %>%
 ##' @param min la borne inférieure de la conversion tract
 ##' @param max la borne supérieure de la conversion tract
 ##' @return oui ou non
-##' @author Samuel Barreto
 is_inside_conv <- function(query, min, max)
 {
     ifelse(min <= query & query <= max, "oui", "non")
 }
 
 sink(file = "../../analysis/inside_conv.tex")
-
 snp %>%
     rowwise() %>%
     ## détermine si on est dans la conversion tract ou non
@@ -339,6 +332,69 @@ snp %>%
     ## compte le nombre de snp par cas
     summarise(count = n()) %>%
     ## format en .tex
-    knitr::kable(format = "latex")
-
+    knitr::kable(format = "latex", booktabs = TRUE)
 sink()
+
+pdf(file = "../../analysis/qualite_distrib.pdf", height = 5.8, width = 8.3)
+snp %>%
+    filter(position == "oui") %>%
+    qplot(data = ., x = offset_on_subject, y = q_qual, color = mutant,
+          alpha = 0.1) +
+    theme_minimal(base_family = "Courier") +
+    scale_color_brewer(palette = "Set2", name = "") +
+    scale_alpha_continuous(guide = FALSE, name = "") + 
+    xlab("Position") + ylab("qualite") +
+    scale_x_continuous(breaks = position_table) +
+    theme(legend.position = c(0.5, 0.2),
+          axis.text = element_text(size = 8, colour = "gray"))
+dev.off()
+
+sink("../../analysis/freq_polymorphism.tex")
+snp %>%
+    filter(position == "oui", q_qual < 40, offset_on_subject < 600) %>%
+    group_by(mutant) %>%
+    summarise(count = n()) %>%
+    knitr::kable(format = "latex", booktabs = TRUE)
+sink()
+
+snp %>%
+    filter(position == "non", q_qual < 40, offset_on_subject < 600) #%>%
+    group_by(mutant) %>%
+    summarise(count = n())# %>%
+    knitr::kable(format = "latex", booktabs = TRUE)
+
+snp %>%
+  mutate(name = gsub("-1073", "", x = name)) %>%
+  filter(position == "oui", q_qual < 40, offset_on_subject < 600) %>%
+  group_by(name) %>%
+  summarise(count = n()) -> #%>%
+  ## filter(count > 1) ->
+  candidats
+
+snp %>%
+  filter(name == "pW6-1073") %>%
+  qplot(data = .,
+        x = offset_on_subject,
+        y = q_qual,
+        geom = "line",
+        xlim = c(0, 750)) +
+  geom_vline( xintercept = 456, color = "red") +
+  geom_vline(xintercept = position_table,
+             color = "blue",
+             alpha = 0.2)
+
+snp %>%
+  mutate(name = gsub("-1073", "", x = name)) %>%
+  filter(name %in% candidats$name) %>%
+  ggplot(data = .,
+         aes(x = offset_on_subject, y = q_qual,
+             colour = name)) +
+  geom_line() +
+  facet_grid(name~mutant) +
+  theme_minimal() +
+  theme(text = element_text(size = 6))
+
+ggsave(filename = "~/stage/seq_novembre/analysis/candidats_heterozygotes.pdf",
+       width = 29.7, height = 21, units = "cm")
+
+write.csv(snp, file = "snp_table.csv", quote = FALSE)

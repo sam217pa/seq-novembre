@@ -13,5 +13,10 @@ do
 done
 
 ## convertit le fastq en fasta
-seqret -sformat fastq -osformat fasta -auto -stdout \
-       -sequence ../data/untrimmed.fastq > ../data/untrimmed.fasta
+seqret \
+    -sformat fastq \
+    -osformat fasta \
+    -auto \
+    -stdout \
+    -sequence ../data/untrimmed.fastq \
+    > ../data/untrimmed.fasta
