@@ -809,7 +809,7 @@ Le but est d'obtenir un tableau qui aurait la forme suivante :
 | 90 | 0 | 0 | 120 | G    |        120 | A   |        90 |   120 |      437 | G         | A  |
 
 Le programme [[http://www.nybg.org/files/scientists/dlittle/polySNP.html][polySNP]] fait ça justement.
- 
+
 ** Base calling
 Le but de cet étape est de déterminer, pour chaque position, par séquence, qui
 est la base majoritaire, la confiance qu'on peut lui attribuer, la base
@@ -969,28 +969,26 @@ corrigée, mais elle semble présenter un indel à la position
   cd ~/stage/seq_novembre/data
 
   needle \
-      -asequence ./ref/wt.fasta \
+      -asequence ./ref/wt_corrected.fst \
       -sformat1 fasta \
-      -bsequence ./ref/strong.fasta \
+      -bsequence ./ref/strong.fst \
       -sformat2 fasta \
-      -outfile ./ref/aln-strong-wt.fasta\
+      -outfile ./ref/aln-strong-wt.fst\
       -aformat3 fasta \
-      -gapopen 10.0 \ # pénalité d'ouverture de gap
-      -gapextend 0.5 # pénalité d'extension de gap
+      -gapopen 10.0 \
+      -gapextend 0.5
 
   needle \
-      -asequence ./ref/wt.fasta \
+      -asequence ./ref/wt_corrected.fst \
       -sformat1 fasta \
-      -bsequence ./ref/weak.fasta \
+      -bsequence ./ref/weak.fst \
       -sformat2 fasta \
-      -outfile ./ref/aln-weak-wt.fasta\
+      -outfile ./ref/aln-weak-wt.fst\
       -aformat3 fasta \
       -gapopen 10.0 \
       -gapextend 0.5
 #+END_SRC
 
- Dans une deuxième étape
- 
 **** polySNP
 
 La documentation du programme =polySNP=. 
@@ -1109,8 +1107,8 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
 
   # enlève les champs mal formattés (ie une virgule dans le champ commentaire.
   # dans un fichier csv. malin...)
-  sed 's/,\ //g' weak/weak-polysnp.csv > weak/weak-polysnp.tmp.csv
-  sed 's/,\ //g' strong/strong-polysnp.csv > strong/strong-polysnp.tmp.csv
+  sed 's/,\ / /g' weak/weak-polysnp.csv > weak/weak-polysnp.tmp.csv
+  sed 's/,\ / /g' strong/strong-polysnp.csv > strong/strong-polysnp.tmp.csv
 
   # prepend header.csv describing fields to results table
   cat header.csv weak/weak-polysnp.tmp.csv > weak.csv
@@ -1120,23 +1118,84 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
 ** analyses 
 
 *** get and clean data
+~polySNP~ introduit une colonne de commentaire, bien trop longue, remplacée par
+un facteur à quatre niveaux. 
+
+| facteur | commentaire                                           |
+|---------+-------------------------------------------------------|
+| D       | WARNING: bases could not be matched                   |
+| C       | WARNING: multiple peak span, data are not trustworthy |
+| B       | WARNING: primary peak does not match the reference    |
+| A       | processed normally                                    |
+
 #+BEGIN_SRC R :tangle scripts/polysnip.R
   setwd("~/stage/seq_novembre/data/snp-calling")
 
   library(dplyr)
   library(ggplot2)
 
-  weak   <- read.csv("weak.csv")   %>% tbl_df()
-  strong <- read.csv("strong.csv") %>% tbl_df()
 
-  read_data <- function(filename)
+  read_polysnp <- function(filename)
   {
     read.csv(filename) %>%
       tbl_df() %>%
       select(
-        -datum, -analysis, 
-      )
+        -datum,
+        -analysis,
+        -corrected.proportion.A,
+        -corrected.proportion.B,
+        name   = file,
+        refpos = reference.position,
+        qpos   = SCF.position,
+        wt     = A.base,
+        snp    = B.base,
+        first  = first.call,
+        second = second.call,
+        uncorA = uncorrected.proportion.A,
+        uncorB = uncorrected.proportion.B,
+        farea  = first.area,
+        sarea  = second.area
+      ) %>%
+      mutate(name = gsub("-1073.ab1", "", x = name))
   }
+
+  ## combine les données en une table unique, ajoute l'info du type de mutant.
+  ## TODO corriger les mutants dans la mauvaise catégorie.
+  snp <- rbind(
+    read_polysnp("weak.csv") %>% mutate(mutant = "weak") %>% tbl_df(),
+    read_polysnp("strong.csv") %>% mutate(mutant = "strong") %>% tbl_df()
+  )
+
+  ## réaffecte les niveaux de facteur. 
+  ##
+  ## +---------+-------------------------------------------------------+
+  ## | facteur | commentaire                                           |
+  ## |---------+-------------------------------------------------------|
+  ## | D       | WARNING: bases could not be matched                   |
+  ## | C       | WARNING: multiple peak span, data are not trustworthy |
+  ## | B       | WARNING: primary peak does not match the reference    |
+  ## | A       | processed normally                                    |
+  ## +---------+-------------------------------------------------------+
+  snp$comments <- plyr::mapvalues(snp$comments,
+                                  from = levels(snp$comments),
+                                  to = c("D", "C", "B", "A"))
+
+  ## correct NA symbol
+  snp$second[snp$second == "-"] <- NA
+
+  library(ggplot2)
+  theme_set(theme_minimal())
+
+  snp %>%
+    ggplot(aes(x = refpos, fill = mutant)) +
+    geom_histogram(binwidth = 10) +
+    facet_grid(mutant~.)
+
+  snp %>%
+    filter(!is.na(second)) %>%
+    ggplot(aes(x = refpos, fill = mutant)) +
+    geom_histogram() +
+    facet_grid(mutant~.)
 #+END_SRC
 ** Alignement
 #+BEGIN_SRC R :tangle ./scripts/sangerseq.R
