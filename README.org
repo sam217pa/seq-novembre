@@ -809,6 +809,35 @@ Le but est d'obtenir un tableau qui aurait la forme suivante :
 | 90 | 0 | 0 | 120 | G    |        120 | A   |        90 |   120 |      437 | G         | A  |
 
 Le programme [[http://www.nybg.org/files/scientists/dlittle/polySNP.html][polySNP]] fait ça justement.
+** bascule des fichiers mal appelés
+Le but de ce script est de repasser les fichiers du tableau suivant dans les
+bonnes catégories, de façon à ce qu'ils soient alignés avec la bonne référence. 
+
+| nom    | type     |
+|--------+----------|
+| "pS60" | "weak"   |
+| "pS83" | "weak"   |
+| "pS92" | "weak"   |
+| "pS91" | "weak"   |
+| "pW6"  | "strong" |
+
+J'ai pas choisi la méthode la plus subtile. Ça fera le taf, pour l'instant. 
+
+#+BEGIN_SRC sh recaller.sh
+  #!/bin/bash
+
+  ## TODO peut-être trouver une solution plus "élégante…"
+
+  cd ~/stage/seq_novembre/data
+
+  cd ./spectrograms
+
+  mv pS60-1073.ab1 pW600-1073.ab1
+  mv pS83-1073.ab1 pW830-1073.ab1
+  mv pS92-1073.ab1 pW920-1073.ab1
+  mv pS91-1073.ab1 pW910-1073.ab1
+  mv  pW6-1073.ab1 pS600-1073.ab1
+#+END_SRC
 
 ** Base calling
 Le but de cet étape est de déterminer, pour chaque position, par séquence, qui
@@ -963,29 +992,33 @@ corrigée, mais elle semble présenter un indel à la position
 
 **** alignement des références
 #+BEGIN_SRC sh :tangle ./scripts/aligne_reference_snp.sh
-  #!/usr/bin/bash
+  #!/bin/bash
   ##
   ##
   cd ~/stage/seq_novembre/data
 
-  needle \
+  needle                                \
       -asequence ./ref/wt_corrected.fst \
-      -sformat1 fasta \
-      -bsequence ./ref/strong.fst \
-      -sformat2 fasta \
-      -outfile ./ref/aln-strong-wt.fst\
-      -aformat3 fasta \
-      -gapopen 10.0 \
+      -sformat1 fasta                   \
+      -sreverse1                        \
+      -bsequence ./ref/strong.fst       \
+      -sformat2 fasta                   \
+      -sreverse2                        \
+      -outfile ./ref/aln-strong-wt.fst  \
+      -aformat3 fasta                   \
+      -gapopen 10.0                     \
       -gapextend 0.5
 
-  needle \
+  needle                                \
       -asequence ./ref/wt_corrected.fst \
-      -sformat1 fasta \
-      -bsequence ./ref/weak.fst \
-      -sformat2 fasta \
-      -outfile ./ref/aln-weak-wt.fst\
-      -aformat3 fasta \
-      -gapopen 10.0 \
+      -sformat1 fasta                   \
+      -sreverse1                        \
+      -bsequence ./ref/weak.fst         \
+      -sformat2 fasta                   \
+      -sreverse2                        \
+      -outfile ./ref/aln-weak-wt.fst    \
+      -aformat3 fasta                   \
+      -gapopen 10.0                     \
       -gapextend 0.5
 #+END_SRC
 
@@ -994,13 +1027,13 @@ corrigée, mais elle semble présenter un indel à la position
 La documentation du programme =polySNP=. 
 
 #+BEGIN_QUOTE
-“reference_file” is a FASTA format file containing two aligned sequences (SNPs
+~reference_file~ is a FASTA format file containing two aligned sequences (SNPs
 will be inferred)
 
-“trace_file” is a chromatogram file readable by PHRED or convert_trace
+~trace_file~ is a chromatogram file readable by PHRED or convert_trace
 
-“standard_curve_file” is a CSV text file containing reference position (in
-“reference_file”), reference base, slope (decimal notation), y–intercept
+~standard_curve_file~ is a CSV text file containing reference position (in
+~reference_file~), reference base, slope (decimal notation), y–intercept
 
 ~-l~ outputs a line of data labels before outputting the data
 
@@ -1134,10 +1167,9 @@ un facteur à quatre niveaux.
   library(dplyr)
   library(ggplot2)
 
-
   read_polysnp <- function(filename)
   {
-    read.csv(filename) %>%
+    read.csv(filename, stringsAsFactors = FALSE) %>%
       tbl_df() %>%
       select(
         -datum,
@@ -1183,10 +1215,21 @@ un facteur à quatre niveaux.
   ## correct NA symbol
   snp$second[snp$second == "-"] <- NA
 
+  ## corrige les erreurs de SNP. 
+  snp$mutant[snp$name == "pS60"] <- "weak"
+  snp$mutant[snp$name == "pS83"] <- "weak"
+  snp$mutant[snp$name == "pS92"] <- "weak"
+  snp$mutant[snp$name == "pS91"] <- "weak"
+  snp$mutant[snp$name == "pW6" ] <- "strong"
+#+END_SRC
+*** eda 
+
+#+BEGIN_SRC R :tangle scripts/polysnip.R
   library(ggplot2)
-  theme_set(theme_minimal())
+  theme_set(theme_minimal(base_size = 9, base_family = "Courier"))
 
   snp %>%
+    filter(comments == "B") %>%
     ggplot(aes(x = refpos, fill = mutant)) +
     geom_histogram(binwidth = 10) +
     facet_grid(mutant~.)
@@ -1194,7 +1237,7 @@ un facteur à quatre niveaux.
   snp %>%
     filter(!is.na(second)) %>%
     ggplot(aes(x = refpos, fill = mutant)) +
-    geom_histogram() +
+    geom_histogram(binwidth = 1) +
     facet_grid(mutant~.)
 #+END_SRC
 ** Alignement
@@ -1337,10 +1380,11 @@ traceMatrix(pW85) %>%
   gather(trace, value, V1:V4) -> tracematrix
 #+END_SRC
 
-
 * Script Principal
 
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
+  #!/bin/bash
+
   cd ~/stage/seq_novembre/scripts
 
   chmod +x *.sh

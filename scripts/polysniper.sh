@@ -14,8 +14,8 @@ sed -i '/^$/d' strong/strong-polysnp.csv
 
 # enlève les champs mal formattés (ie une virgule dans le champ commentaire.
 # dans un fichier csv. malin...)
-sed 's/,\ //g' weak/weak-polysnp.csv > weak/weak-polysnp.tmp.csv
-sed 's/,\ //g' strong/strong-polysnp.csv > strong/strong-polysnp.tmp.csv
+sed 's/,\ / /g' weak/weak-polysnp.csv > weak/weak-polysnp.tmp.csv
+sed 's/,\ / /g' strong/strong-polysnp.csv > strong/strong-polysnp.tmp.csv
 
 # prepend header.csv describing fields to results table
 cat header.csv weak/weak-polysnp.tmp.csv > weak.csv

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd ~/stage/seq_novembre/scripts
 
 chmod +x *.sh
