@@ -809,7 +809,7 @@ Le but est d'obtenir un tableau qui aurait la forme suivante :
 | 90 | 0 | 0 | 120 | G    |        120 | A   |        90 |   120 |      437 | G         | A  |
 
 Le programme [[http://www.nybg.org/files/scientists/dlittle/polySNP.html][polySNP]] fait ça justement.
-** bascule des fichiers mal appelés
+** Bascule des fichiers mal appelés
 Le but de ce script est de repasser les fichiers du tableau suivant dans les
 bonnes catégories, de façon à ce qu'ils soient alignés avec la bonne référence. 
 
@@ -1140,16 +1140,22 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
 
   # enlève les champs mal formattés (ie une virgule dans le champ commentaire.
   # dans un fichier csv. malin...)
-  sed 's/,\ / /g' weak/weak-polysnp.csv > weak/weak-polysnp.tmp.csv
-  sed 's/,\ / /g' strong/strong-polysnp.csv > strong/strong-polysnp.tmp.csv
+  # prepend header.csv describing fields to results
+  # table and remove space
+  { head -n 1 header.csv |          \
+          sed 's/ /\./g' ;          \
+    cat weak/weak-polysnp.csv |     \
+        sed 's/,\ / /g' }  |        \
+      cat > weak.csv
 
-  # prepend header.csv describing fields to results table
-  cat header.csv weak/weak-polysnp.tmp.csv > weak.csv
-  cat header.csv strong/strong-polysnp.tmp.csv > strong.csv
+  { head -n 1 header.csv |          \
+          sed 's/ /\./g' ;          \
+    cat strong/strong-polysnp.csv | \
+        sed 's/,\ / /g' } |         \
+      cat > strong.csv
 #+END_SRC
 
-** analyses 
-
+** Analyses 
 *** get and clean data
 ~polySNP~ introduit une colonne de commentaire, bien trop longue, remplacée par
 un facteur à quatre niveaux. 
@@ -1188,7 +1194,8 @@ un facteur à quatre niveaux.
         farea  = first.area,
         sarea  = second.area
       ) %>%
-      mutate(name = gsub("-1073.ab1", "", x = name))
+      mutate(name = gsub("-1073.ab1", "", x = name),
+             comments = factor(comments))
   }
 
   ## combine les données en une table unique, ajoute l'info du type de mutant.
@@ -1208,9 +1215,13 @@ un facteur à quatre niveaux.
   ## | B       | WARNING: primary peak does not match the reference    |
   ## | A       | processed normally                                    |
   ## +---------+-------------------------------------------------------+
+
+  ## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
+  ## facteur. sensible aux variations de paramètre polySNP à mon avis. à
+  ## surveiller.
   snp$comments <- plyr::mapvalues(snp$comments,
                                   from = levels(snp$comments),
-                                  to = c("D", "C", "B", "A"))
+                                  to = c("D", "A", "B"))
 
   ## correct NA symbol
   snp$second[snp$second == "-"] <- NA
@@ -1222,11 +1233,15 @@ un facteur à quatre niveaux.
   snp$mutant[snp$name == "pS91"] <- "weak"
   snp$mutant[snp$name == "pW6" ] <- "strong"
 #+END_SRC
-*** eda 
 
+*** eda 
 #+BEGIN_SRC R :tangle scripts/polysnip.R
   library(ggplot2)
-  theme_set(theme_minimal(base_size = 9, base_family = "Courier"))
+  theme_set(theme_gray(base_size = 9, base_family = "Courier"))
+
+  snp %>%
+    group_by(comments) %>%
+    summarise(count = n())
 
   snp %>%
     filter(comments == "B") %>%
@@ -1235,151 +1250,23 @@ un facteur à quatre niveaux.
     facet_grid(mutant~.)
 
   snp %>%
-    filter(!is.na(second)) %>%
+    filter(!is.na(second)) #%>%
     ggplot(aes(x = refpos, fill = mutant)) +
     geom_histogram(binwidth = 1) +
     facet_grid(mutant~.)
+
+  snp %>%
+    filter(!is.na(second)) %>%
+    group_by(refpos, mutant, second) %>%
+    summarise(count =n()) %>%
+    ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
+    geom_point() +
+    geom_bar(stat = "identity", alpha = 0.2) +
+    xlab("Position sur la sequence de reference") +
+    ylab("Nombre de sequence montrant un pic secondaire") +
+    scale_fill_discrete(guide = FALSE) +
+    scale_colour_discrete(guide = FALSE)
 #+END_SRC
-** Alignement
-#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
-  ##' .. content for \description{} (no empty lines) ..
-  ##' Aligne les données de la séquence primaire avec ceux de la séquence
-  ##' secondaire, en utilisant un algorithme TODO de type SM.
-  ##' .. content for \details{} ..
-  ##' @title aligner
-  ##' @param seq l'objet sangerseq d'intérêt.
-  ##' @param name le nom de la séquence, NSE.
-  ##' @return un tableau contenant la position, la base du pic majeur,
-  ##' la base du pic secondaire et le nom de la séquence.
-  aligner <- function(seq, name)
-  {
-    argname <- deparse(substitute(seq))
-    pairwiseAlignment(primarySeq(seq), secondarySeq(seq),
-                      type= "global-local") %>%
-      mismatchTable() %>%
-      ## ne garde que les bases litigieuses et leur position
-      select(primaire   = PatternSubstring,
-             secondaire = SubjectSubstring,
-             position   = PatternStart) %>%
-      ## trim les positions de faible qualité
-      filter(position > 40, # première position de bonne qualité
-             position < length(primarySeq(seq)) - 40) %>% # dernière position de bonne qualité.
-      mutate(name = name) # ajoute une colonne avec le nom de la séquence.
-  }
-
-  pW85_mm <- aligner(pW85, "pW85")
-  pW85_mm
-
-#+END_SRC
-
-** Pooling
-#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
-
-  id_table <- tbl_df(read.table("../id_table.dat", stringsAsFactors = FALSE, head = TRUE))
-  ## rebascule les données litigieuses dans les bonnes catégories
-  ## voir les premiers scripts.
-  id_table$mutant[id_table$name == "pS60-1073"] <- "weak"
-  id_table$mutant[id_table$name == "pS83-1073"] <- "weak"
-  id_table$mutant[id_table$name == "pS92-1073"] <- "weak"
-  id_table$mutant[id_table$name == "pS91-1073"] <- "weak"
-  id_table$mutant[id_table$name == "pW6-1073" ] <- "strong"
-  ## élimine les fichiers aux données manquantes
-  id_table <- filter(id_table, name != "pS6-1073", name != "pS9-1073")
-
-  ##' .. content for \description{} (no empty lines) ..
-  ##' Appelle les bases principales et secondaires par fichier,
-  ##' et aligne avec la séquence de référence.
-  ##' .. content for \details{} ..
-  ##' @title mismatcher
-  ##' @param sequence char, le nom de la séquence.
-  ##' @param ref DNAString, la séquence de référence.
-  ##' @return
-  mismatcher <- function(sequence, ref)
-  {
-    baseCaller(query = paste0("../spectrograms/", sequence, ".ab1"), ref) %>%
-    aligner(., sequence)
-  }
-
-
-  ## baseCaller(query = paste0("../spectrograms/", id_table$name[1], ".ab1"), ref)
-  ## test_id_table <- id_table %>% sample_n(30)
-
-  result_table <- do.call(
-    rbind,
-    lapply(
-      lapply(id_table$name, function(x) mismatcher(sequence = x, ref = ref)),
-      data.frame
-    )
-  )
-
-  write.csv(result_table, file = "result_table")
-
-  result_table %>%
-    tbl_df() %>%
-    inner_join(id_table, by = "name") %>%
-    filter(mutant == "strong") %>%
-    print()
-
-#+END_SRC
-
-** Sens des mutations
-#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
-
-#+TODO: ?mergeIUPACLetters
-
-  iupac_code <-
-  "
-  iupac,meaning
-  A,A
-  C,C
-  G,G
-  T,T
-  M,AC
-  R,AG
-  W,AT
-  S,CG
-  Y,CT
-  K,GT
-  V,ACG
-  H,ACT
-  D,AGT
-  B,CGT
-  X,GATC
-  N,GATC
-  "
-  read.csv(text = iupac_code, stringsAsFactors = FALSE) %>% tbl_df() -> iupac
-
-  is_iupac <- function(base) ifelse(base %in% c("A", "T", "C", "G"), FALSE, TRUE)
-
-  iupacker <- function(subject, query)
-  {
-
-    lapply(
-      str_split(paste0(subject, query), ""),
-      sort)
-  }
-
-  result_table %>%
-    filter( is_iupac(SubjectSubstring)) %>%
-    inner_join(y = iupac, by = c("SubjectSubstring" = "iupac"))
-
-#+END_SRC
-
-** Analyses
-#+BEGIN_SRC R :tangle ./scripts/sangerseq.R
-peakAmpMatrix(pW85) %>%
-  as.data.frame() %>%
-  tbl_df() %>%
-  mutate(pos = rownames(.)) %>%
-  gather(trace, value, V1:V4) -> peakmatrix
-
-traceMatrix(pW85) %>%
-  as.data.frame() #%>%
-  tbl_df() %>%
-  mutate(pos = rownames(.)) %>%
-  gather(trace, value, V1:V4) -> tracematrix
-#+END_SRC
-
 * Script Principal
 
 #+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
