@@ -24,7 +24,8 @@ read_polysnp <- function(filename)
       farea  = first.area,
       sarea  = second.area
     ) %>%
-    mutate(name = gsub("-1073.ab1", "", x = name))
+    mutate(name = gsub("-1073.ab1", "", x = name),
+           comments = factor(comments))
 }
 
 ## combine les données en une table unique, ajoute l'info du type de mutant.
@@ -34,7 +35,7 @@ snp <- rbind(
   read_polysnp("strong.csv") %>% mutate(mutant = "strong") %>% tbl_df()
 )
 
-## réaffecte les niveaux de facteur. 
+## réaffecte les niveaux de facteur.
 ##
 ## +---------+-------------------------------------------------------+
 ## | facteur | commentaire                                           |
@@ -44,14 +45,18 @@ snp <- rbind(
 ## | B       | WARNING: primary peak does not match the reference    |
 ## | A       | processed normally                                    |
 ## +---------+-------------------------------------------------------+
+
+## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
+## facteur. sensible aux variations de paramètre polySNP à mon avis. à
+## surveiller.
 snp$comments <- plyr::mapvalues(snp$comments,
                                 from = levels(snp$comments),
-                                to = c("D", "C", "B", "A"))
+                                to = c("D", "A", "B"))
 
 ## correct NA symbol
 snp$second[snp$second == "-"] <- NA
 
-## corrige les erreurs de SNP. 
+## corrige les erreurs de SNP.
 snp$mutant[snp$name == "pS60"] <- "weak"
 snp$mutant[snp$name == "pS83"] <- "weak"
 snp$mutant[snp$name == "pS92"] <- "weak"
@@ -59,7 +64,11 @@ snp$mutant[snp$name == "pS91"] <- "weak"
 snp$mutant[snp$name == "pW6" ] <- "strong"
 
 library(ggplot2)
-theme_set(theme_minimal(base_size = 9, base_family = "Courier"))
+theme_set(theme_gray(base_size = 9, base_family = "Courier"))
+
+snp %>%
+  group_by(comments) %>%
+  summarise(count = n())
 
 snp %>%
   filter(comments == "B") %>%
@@ -68,7 +77,19 @@ snp %>%
   facet_grid(mutant~.)
 
 snp %>%
-  filter(!is.na(second)) %>%
+  filter(!is.na(second)) #%>%
   ggplot(aes(x = refpos, fill = mutant)) +
   geom_histogram(binwidth = 1) +
   facet_grid(mutant~.)
+
+snp %>%
+  filter(!is.na(second)) %>%
+  group_by(refpos, mutant, second) %>%
+  summarise(count =n()) %>%
+  ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
+  geom_point() +
+  geom_bar(stat = "identity", alpha = 0.2) +
+  xlab("Position sur la sequence de reference") +
+  ylab("Nombre de sequence montrant un pic secondaire") +
+  scale_fill_discrete(guide = FALSE) +
+  scale_colour_discrete(guide = FALSE)

@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
 <title></title>
-<!-- 2016-01-12 Tue 17:15 -->
+<!-- 2016-01-19 Tue 07:55 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="Org-mode">
 <meta name="author" content="Samuel BARRETO">
@@ -1021,9 +1021,7 @@ différente.
 </p>
 </div>
 
-<div id="outline-container-sec-1-6-9-1" class="outline-5">
-<h5 id="sec-1-6-9-1"><span class="section-number-5">1.6.9.1</span> Graphiquement</h5>
-<div class="outline-text-5" id="text-1-6-9-1">
+<ol class="org-ol"><li><a id="sec-1-6-9-1" name="sec-1-6-9-1"></a>Graphiquement<br ><div class="outline-text-5" id="text-1-6-9-1">
 <p>
 On veux étudier le polymorphisme aux positions calibrées. Comme on ne peut pas
 avoir accès aux données trace par trace, on utilise la qualité  comme proxy du
@@ -1070,11 +1068,9 @@ autre, le signal sauvage S persiste dans la population descendante que l'on
 séquence. 
 </p>
 </div>
-</div>
+</li>
 
-<div id="outline-container-sec-1-6-9-2" class="outline-5">
-<h5 id="sec-1-6-9-2"><span class="section-number-5">1.6.9.2</span> Fréquence des bases polymorphes associées aux SNP attendus</h5>
-<div class="outline-text-5" id="text-1-6-9-2">
+<li><a id="sec-1-6-9-2" name="sec-1-6-9-2"></a>Fréquence des bases polymorphes associées aux SNP attendus<br ><div class="outline-text-5" id="text-1-6-9-2">
 <div class="org-src-container">
 
 <pre class="src src-R"><span style="color: #268bd2;">sink</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"../../analysis/freq_polymorphism.tex"</span><span style="color: #2aa198; font-weight: bold;">)</span>
@@ -1131,7 +1127,7 @@ snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
 &#x2014; 
 </p>
 </div>
-</div>
+</li></ol>
 </div>
 
 <div id="outline-container-sec-1-6-10" class="outline-4">
@@ -1226,10 +1222,83 @@ Le but est d'obtenir un tableau qui aurait la forme suivante :
 Le programme <a href="http://www.nybg.org/files/scientists/dlittle/polySNP.html">polySNP</a> fait ça justement.
 </p>
 </div>
-
 <div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Base calling</h3>
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Bascule des fichiers mal appelés</h3>
 <div class="outline-text-3" id="text-2-1">
+<p>
+Le but de ce script est de repasser les fichiers du tableau suivant dans les
+bonnes catégories, de façon à ce qu'ils soient alignés avec la bonne référence. 
+</p>
+
+<table class="table table-striped table-bordered table-hover table-condensed">
+
+
+<colgroup>
+<col  class="left">
+
+<col  class="left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">nom</th>
+<th scope="col" class="left">type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">"pS60"</td>
+<td class="left">"weak"</td>
+</tr>
+
+<tr>
+<td class="left">"pS83"</td>
+<td class="left">"weak"</td>
+</tr>
+
+<tr>
+<td class="left">"pS92"</td>
+<td class="left">"weak"</td>
+</tr>
+
+<tr>
+<td class="left">"pS91"</td>
+<td class="left">"weak"</td>
+</tr>
+
+<tr>
+<td class="left">"pW6"</td>
+<td class="left">"strong"</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Je n'ai pas choisi la méthode la plus subtile. Ça fera le taf, pour l'instant. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
+
+<span style="color: #93a1a1;">## </span><span style="color: #cc9393;">TODO</span><span style="color: #93a1a1;"> peut-&#234;tre trouver une solution plus "&#233;l&#233;gante&#8230;"</span>
+
+<span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/data
+
+<span style="color: #657b83; font-weight: bold;">cd</span> ./spectrograms
+
+mv pS60-1073.ab1 pW600-1073.ab1
+mv pS83-1073.ab1 pW830-1073.ab1
+mv pS92-1073.ab1 pW920-1073.ab1
+mv pS91-1073.ab1 pW910-1073.ab1
+mv  pW6-1073.ab1 pS600-1073.ab1
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> Base calling</h3>
+<div class="outline-text-3" id="text-2-2">
 <p>
 Le but de cet étape est de déterminer, pour chaque position, par séquence, qui
 est la base majoritaire, la confiance qu'on peut lui attribuer, la base
@@ -1238,9 +1307,9 @@ deux scores de confiance.
 </p>
 </div>
 
-<div id="outline-container-sec-2-1-1" class="outline-4">
-<h4 id="sec-2-1-1"><span class="section-number-4">2.1.1</span> via sangerseqR</h4>
-<div class="outline-text-4" id="text-2-1-1">
+<div id="outline-container-sec-2-2-1" class="outline-4">
+<h4 id="sec-2-2-1"><span class="section-number-4">2.2.1</span> via sangerseqR</h4>
+<div class="outline-text-4" id="text-2-2-1">
 <p>
 Dans un premier temps, j'ai voulu prototypé l'analyse et le résultat attendu
 dans R, en utilisant le package <code>sangerseqR</code> (voir la documentation <a href="https://www.bioconductor.org/packages/release/bioc/html/sangerseqR.html">là</a>). 
@@ -1290,7 +1359,7 @@ pW85 <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="
   obj <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
     <span style="color: #268bd2;">peakAmpMatrix</span><span style="color: #b58900; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
     <span style="color: #268bd2;">as.data.frame</span><span style="color: #b58900; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #268bd2;">select</span><span style="color: #b58900; font-weight: bold;">(</span>A <span style="color: #268bd2; font-weight: bold;">=</span> V1, C <span style="color: #268bd2; font-weight: bold;">=</span> V2, G <span style="color: #268bd2; font-weight: bold;">=</span> V3, T <span style="color: #268bd2; font-weight: bold;">=</span> V4<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+    <span style="color: #268bd2;">select</span><span style="color: #b58900; font-weight: bold;">(</span>A <span style="color: #268bd2; font-weight: bold;">=</span> V1, C <span style="color: #268bd2; font-weight: bold;">=</span> V2, G <span style="color: #268bd2; font-weight: bold;">=</span> V3, <span style="color: #b58900;">T</span> <span style="color: #268bd2; font-weight: bold;">=</span> V4<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
     <span style="color: #268bd2;">tbl_df</span><span style="color: #b58900; font-weight: bold;">()</span>
 <span style="color: #2aa198; font-weight: bold;">}</span>
 
@@ -1340,9 +1409,9 @@ test_data <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
 </div>
 </div>
 
-<div id="outline-container-sec-2-1-2" class="outline-4">
-<h4 id="sec-2-1-2"><span class="section-number-4">2.1.2</span> via phred</h4>
-<div class="outline-text-4" id="text-2-1-2">
+<div id="outline-container-sec-2-2-2" class="outline-4">
+<h4 id="sec-2-2-2"><span class="section-number-4">2.2.2</span> via phred</h4>
+<div class="outline-text-4" id="text-2-2-2">
 <p>
 Brent Ewing m'a ensuite envoyé le code source de phred <span class="timestamp-wrapper"><span class="timestamp">[2016-01-08 Fri]</span></span>, que
 j'ai pu installer sur le mac et sur la virtualbox biolinux. C'est l'une des
@@ -1372,7 +1441,7 @@ phred <span style="color: #b58900; font-weight: bold;">\</span>
     <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">emplacement des fichiers</span>
     -id ./spectrograms <span style="color: #b58900; font-weight: bold;">\</span>
     <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">trim les bases &#224; gauche et droite en fonction de la qualit&#233;</span>
-    -trim_alt <span style="color: #b58900; font-weight: bold;">\</span>
+    -trim_alt <span style="color: #2aa198;">""</span> <span style="color: #b58900; font-weight: bold;">\</span>
     <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">selon la probabilit&#233; d'erreur suivante.</span>
     -trim_cutoff <span style="color: #6c71c4;">0.05</span> <span style="color: #b58900; font-weight: bold;">\</span>
     <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">&#233;crit les s&#233;quences trimm&#233;es dans un fichier phred</span>
@@ -1388,9 +1457,9 @@ phred <span style="color: #b58900; font-weight: bold;">\</span>
 </div>
 </div>
 
-<div id="outline-container-sec-2-1-3" class="outline-4">
-<h4 id="sec-2-1-3"><span class="section-number-4">2.1.3</span> via polySNP</h4>
-<div class="outline-text-4" id="text-2-1-3">
+<div id="outline-container-sec-2-2-3" class="outline-4">
+<h4 id="sec-2-2-3"><span class="section-number-4">2.2.3</span> via polySNP</h4>
+<div class="outline-text-4" id="text-2-2-3">
 <p>
 PolySNP effectue exactement le même procédé. Il nécessite une étape antérieure
 d'alignement entre deux séquences, la séquence sauvage et la séquence porteuse
@@ -1398,69 +1467,71 @@ des SNP, au format fasta. Le but est de déduire les positions de SNP, pour
 ensuite aligner les séquences en sortie de phred avec cet alignement de
 référence.
 </p>
+</div>
 
+
+<ol class="org-ol"><li><a id="sec-2-2-3-1" name="sec-2-2-3-1"></a>alignement des références<br ><div class="outline-text-5" id="text-2-2-3-1">
 <p>
 Cet alignement est effectué avec le programme EMBOSS <code>needle</code>, qui utilise
 l'algorithme de Needleman-Wunsch. L'alignement se fait sur toute la longueur des
 séquences. Dans un premier temps, j'utilisais la séquence référence non
-corrigée, mais elle semble présenter un indel à la position 
+corrigée, mais elle semble présenter un indel à la position. Il faut de plus
+utiliser le <i>reverse complement</i> des séquences de référence, autrement muscle se
+perd dans l'étape d'alignement. 
 </p>
-</div>
-
-<div id="outline-container-sec-2-1-3-1" class="outline-5">
-<h5 id="sec-2-1-3-1"><span class="section-number-5">2.1.3.1</span> alignement des références</h5>
-<div class="outline-text-5" id="text-2-1-3-1">
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/usr/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
+<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
 <span style="color: #93a1a1;">##</span>
 <span style="color: #93a1a1;">##</span>
 <span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/data
 
-needle <span style="color: #b58900; font-weight: bold;">\</span>
+needle                                <span style="color: #b58900; font-weight: bold;">\</span>
     -asequence ./ref/wt_corrected.fst <span style="color: #b58900; font-weight: bold;">\</span>
-    -sformat1 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -bsequence ./ref/strong.fst <span style="color: #b58900; font-weight: bold;">\</span>
-    -sformat2 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -outfile ./ref/aln-strong-wt.fst<span style="color: #b58900; font-weight: bold;">\</span>
-    -aformat3 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -gapopen <span style="color: #6c71c4;">10.0</span> <span style="color: #b58900; font-weight: bold;">\</span>
+    -sformat1 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -sreverse1                        <span style="color: #b58900; font-weight: bold;">\</span>
+    -bsequence ./ref/strong.fst       <span style="color: #b58900; font-weight: bold;">\</span>
+    -sformat2 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -sreverse2                        <span style="color: #b58900; font-weight: bold;">\</span>
+    -outfile ./ref/aln-strong-wt.fst  <span style="color: #b58900; font-weight: bold;">\</span>
+    -aformat3 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -gapopen <span style="color: #6c71c4;">10.0</span>                     <span style="color: #b58900; font-weight: bold;">\</span>
     -gapextend <span style="color: #6c71c4;">0.5</span>
 
-needle <span style="color: #b58900; font-weight: bold;">\</span>
+needle                                <span style="color: #b58900; font-weight: bold;">\</span>
     -asequence ./ref/wt_corrected.fst <span style="color: #b58900; font-weight: bold;">\</span>
-    -sformat1 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -bsequence ./ref/weak.fst <span style="color: #b58900; font-weight: bold;">\</span>
-    -sformat2 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -outfile ./ref/aln-weak-wt.fst<span style="color: #b58900; font-weight: bold;">\</span>
-    -aformat3 fasta <span style="color: #b58900; font-weight: bold;">\</span>
-    -gapopen <span style="color: #6c71c4;">10.0</span> <span style="color: #b58900; font-weight: bold;">\</span>
+    -sformat1 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -sreverse1                        <span style="color: #b58900; font-weight: bold;">\</span>
+    -bsequence ./ref/weak.fst         <span style="color: #b58900; font-weight: bold;">\</span>
+    -sformat2 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -sreverse2                        <span style="color: #b58900; font-weight: bold;">\</span>
+    -outfile ./ref/aln-weak-wt.fst    <span style="color: #b58900; font-weight: bold;">\</span>
+    -aformat3 fasta                   <span style="color: #b58900; font-weight: bold;">\</span>
+    -gapopen <span style="color: #6c71c4;">10.0</span>                     <span style="color: #b58900; font-weight: bold;">\</span>
     -gapextend <span style="color: #6c71c4;">0.5</span>
 </pre>
 </div>
 </div>
-</div>
+</li>
 
-<div id="outline-container-sec-2-1-3-2" class="outline-5">
-<h5 id="sec-2-1-3-2"><span class="section-number-5">2.1.3.2</span> polySNP</h5>
-<div class="outline-text-5" id="text-2-1-3-2">
+<li><a id="sec-2-2-3-2" name="sec-2-2-3-2"></a>documentation polySNP<br ><div class="outline-text-5" id="text-2-2-3-2">
 <p>
 La documentation du programme <code>polySNP</code>. 
 </p>
 
 <blockquote>
 <p>
-“reference<sub>file</sub>” is a FASTA format file containing two aligned sequences (SNPs
+<code>reference_file</code> is a FASTA format file containing two aligned sequences (SNPs
 will be inferred)
 </p>
 
 <p>
-“trace<sub>file</sub>” is a chromatogram file readable by PHRED or convert<sub>trace</sub>
+<code>trace_file</code> is a chromatogram file readable by PHRED or convert<sub>trace</sub>
 </p>
 
 <p>
-“standard<sub>curve</sub><sub>file</sub>” is a CSV text file containing reference position (in
-“reference<sub>file</sub>”), reference base, slope (decimal notation), y–intercept
+<code>standard_curve_file</code> is a CSV text file containing reference position (in
+<code>reference_file</code>), reference base, slope (decimal notation), y–intercept
 </p>
 
 <p>
@@ -1508,7 +1579,9 @@ les fichiers en cours d'analyse soient dans le dossier courant.
 documents dans un dossier de travail réservé.
 </li>
 </ul>
-
+</div>
+</li>
+<li><a id="sec-2-2-3-3" name="sec-2-2-3-3"></a>clones weak<br ><div class="outline-text-5" id="text-2-2-3-3">
 <p>
 Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
 </p>
@@ -1518,10 +1591,11 @@ Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
 
 <span style="color: #93a1a1;">####</span>
 <span style="color: #93a1a1;">#### </span><span style="color: #93a1a1;">POLYSNP</span>
+<span style="color: #93a1a1;">####</span>
 <span style="color: #93a1a1;">###</span>
-<span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">le script qui effectue le base-calling via phred, qui d&#233;termine les</span>
+<span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">Ce script qui effectue le base-calling via phred, d&#233;termine les</span>
 <span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">positions de SNP qui sont aux positions attendues d'apr&#232;s les alignements de</span>
-<span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">r&#233;f&#233;rence, et qui d&#233;termine pour chaque position attendue les deux bases</span>
+<span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">r&#233;f&#233;rence, et d&#233;termine pour chaque position attendue les deux bases</span>
 <span style="color: #93a1a1;">### </span><span style="color: #93a1a1;">appel&#233;es &#224; chaque pic.</span>
 
 <span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/data/snp-calling/weak
@@ -1541,7 +1615,10 @@ cp ../../ref/aln-weak-wt.fst .
 <span style="color: #859900; font-weight: bold;">done</span>
 </pre>
 </div>
+</div>
+</li>
 
+<li><a id="sec-2-2-3-4" name="sec-2-2-3-4"></a>clones strong<br ><div class="outline-text-5" id="text-2-2-3-4">
 <p>
 Le script suivant permet d'obtenir le tableau de résultat pour les clones strong.
 </p>
@@ -1574,7 +1651,10 @@ cp ../../ref/aln-strong-wt.fst .
 <span style="color: #859900; font-weight: bold;">done</span>
 </pre>
 </div>
+</div>
+</li>
 
+<li><a id="sec-2-2-3-5" name="sec-2-2-3-5"></a>tous les clones<br ><div class="outline-text-5" id="text-2-2-3-5">
 <p>
 Le script suivant permet d'obtenir les deux tableaux de résultats, et élimine
 les lignes vides. (temps d'exécution approximatif : 2min.)
@@ -1598,25 +1678,47 @@ sed -i <span style="color: #2aa198;">'/^$/d'</span> strong/strong-polysnp.csv
 
 <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">enl&#232;ve les champs mal formatt&#233;s (ie une virgule dans le champ commentaire.</span>
 <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">dans un fichier csv. malin...)</span>
-sed <span style="color: #2aa198;">'s/,\ / /g'</span> weak/weak-polysnp.csv &gt; weak/weak-polysnp.tmp.csv
-sed <span style="color: #2aa198;">'s/,\ / /g'</span> strong/strong-polysnp.csv &gt; strong/strong-polysnp.tmp.csv
+<span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">prepend header.csv describing fields to results</span>
+<span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">table and remove space</span>
+<span style="color: #2aa198;">{</span> head -n <span style="color: #6c71c4;">1</span> header.csv | sed <span style="color: #2aa198;">'s/ /\./g'</span> ;          <span style="color: #b58900; font-weight: bold;">\</span>
+  cat weak/weak-polysnp.csv | sed <span style="color: #2aa198;">'s/,\ / /g'</span> <span style="color: #2aa198;">}</span>  | <span style="color: #b58900; font-weight: bold;">\</span>
+    cat &gt; weak.csv
 
-<span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">prepend header.csv describing fields to results table</span>
-cat header.csv weak/weak-polysnp.tmp.csv &gt; weak.csv
-cat header.csv strong/strong-polysnp.tmp.csv &gt; strong.csv
+<span style="color: #2aa198;">{</span> head -n <span style="color: #6c71c4;">1</span> header.csv | sed <span style="color: #2aa198;">'s/ /\./g'</span> ; <span style="color: #b58900; font-weight: bold;">\</span>
+  cat strong/strong-polysnp.csv |sed <span style="color: #2aa198;">'s/,\ / /g'</span> <span style="color: #2aa198;">}</span> | <span style="color: #b58900; font-weight: bold;">\</span>
+    cat &gt; strong.csv
+</pre>
+</div>
+</div>
+</li></ol>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> Analyses</h3>
+<div class="outline-text-3" id="text-2-3">
+</div><div id="outline-container-sec-2-3-1" class="outline-4">
+<h4 id="sec-2-3-1"><span class="section-number-4">2.3.1</span> Boilerplate</h4>
+<div class="outline-text-4" id="text-2-3-1">
+<div class="org-src-container">
+
+<pre class="src src-R"><span style="color: #268bd2;">setwd</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"~/stage/seq_novembre/data/snp-calling"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>dplyr<span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>ggplot2<span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>viridis<span style="color: #2aa198; font-weight: bold;">)</span>
+
+<span style="color: #268bd2;">theme_set</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">theme_gray</span><span style="color: #b58900; font-weight: bold;">(</span>base_size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">9</span>, base_family <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"Courier"</span><span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+          <span style="color: #268bd2;">theme</span><span style="color: #b58900; font-weight: bold;">(</span>panel.grid.major.y <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_line</span><span style="color: #268bd2; font-weight: bold;">(</span>size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">1</span>, color <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"white"</span><span style="color: #268bd2; font-weight: bold;">)</span>,
+                panel.grid.major.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #268bd2; font-weight: bold;">()</span>,
+                panel.grid.minor.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #268bd2; font-weight: bold;">()</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
 </pre>
 </div>
 </div>
 </div>
-</div>
-</div>
 
-<div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2"><span class="section-number-3">2.2</span> analyses</h3>
-<div class="outline-text-3" id="text-2-2">
-</div><div id="outline-container-sec-2-2-1" class="outline-4">
-<h4 id="sec-2-2-1"><span class="section-number-4">2.2.1</span> get and clean data</h4>
-<div class="outline-text-4" id="text-2-2-1">
+<div id="outline-container-sec-2-3-2" class="outline-4">
+<h4 id="sec-2-3-2"><span class="section-number-4">2.3.2</span> get and clean data</h4>
+<div class="outline-text-4" id="text-2-3-2">
 <p>
 <code>polySNP</code> introduit une colonne de commentaire, bien trop longue, remplacée par
 un facteur à quatre niveaux. 
@@ -1661,21 +1763,16 @@ un facteur à quatre niveaux.
 
 <div class="org-src-container">
 
-<pre class="src src-R"><span style="color: #268bd2;">setwd</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"~/stage/seq_novembre/data/snp-calling"</span><span style="color: #2aa198; font-weight: bold;">)</span>
-
-<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>dplyr<span style="color: #2aa198; font-weight: bold;">)</span>
-<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>ggplot2<span style="color: #2aa198; font-weight: bold;">)</span>
-
-
-<span style="color: #268bd2;">read_polysnp</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>filename<span style="color: #2aa198; font-weight: bold;">)</span>
+<pre class="src src-R"><span style="color: #268bd2;">read_polysnp</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>filename<span style="color: #2aa198; font-weight: bold;">)</span>
 <span style="color: #2aa198; font-weight: bold;">{</span>
-  <span style="color: #268bd2;">read.csv</span><span style="color: #b58900; font-weight: bold;">(</span>filename<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">read.csv</span><span style="color: #b58900; font-weight: bold;">(</span>filename, stringsAsFactors <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
     <span style="color: #268bd2;">tbl_df</span><span style="color: #b58900; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
     <span style="color: #268bd2;">select</span><span style="color: #b58900; font-weight: bold;">(</span>
       <span style="color: #268bd2; font-weight: bold;">-</span>datum,
       <span style="color: #268bd2; font-weight: bold;">-</span>analysis,
       <span style="color: #268bd2; font-weight: bold;">-</span>corrected.proportion.A,
       <span style="color: #268bd2; font-weight: bold;">-</span>corrected.proportion.B,
+      <span style="color: #268bd2; font-weight: bold;">-</span>uncorrected.proportion.B,
       name   <span style="color: #268bd2; font-weight: bold;">=</span> file,
       refpos <span style="color: #268bd2; font-weight: bold;">=</span> reference.position,
       qpos   <span style="color: #268bd2; font-weight: bold;">=</span> SCF.position,
@@ -1683,12 +1780,12 @@ un facteur à quatre niveaux.
       snp    <span style="color: #268bd2; font-weight: bold;">=</span> B.base,
       first  <span style="color: #268bd2; font-weight: bold;">=</span> first.call,
       second <span style="color: #268bd2; font-weight: bold;">=</span> second.call,
-      uncorA <span style="color: #268bd2; font-weight: bold;">=</span> uncorrected.proportion.A,
-      uncorB <span style="color: #268bd2; font-weight: bold;">=</span> uncorrected.proportion.B,
+      ratioA <span style="color: #268bd2; font-weight: bold;">=</span> uncorrected.proportion.A,
       farea  <span style="color: #268bd2; font-weight: bold;">=</span> first.area,
       sarea  <span style="color: #268bd2; font-weight: bold;">=</span> second.area
     <span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #268bd2;">mutate</span><span style="color: #b58900; font-weight: bold;">(</span>name <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">gsub</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #2aa198;">"-1073.ab1"</span>, <span style="color: #2aa198;">""</span>, x <span style="color: #268bd2; font-weight: bold;">=</span> name<span style="color: #268bd2; font-weight: bold;">)</span><span style="color: #b58900; font-weight: bold;">)</span>
+    <span style="color: #268bd2;">mutate</span><span style="color: #b58900; font-weight: bold;">(</span>name <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">gsub</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #2aa198;">"-1073.ab1"</span>, <span style="color: #2aa198;">""</span>, x <span style="color: #268bd2; font-weight: bold;">=</span> name<span style="color: #268bd2; font-weight: bold;">)</span>,
+           comments <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">factor</span><span style="color: #268bd2; font-weight: bold;">(</span>comments<span style="color: #268bd2; font-weight: bold;">)</span><span style="color: #b58900; font-weight: bold;">)</span>
 <span style="color: #2aa198; font-weight: bold;">}</span>
 
 <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">combine les donn&#233;es en une table unique, ajoute l'info du type de mutant.</span>
@@ -1708,198 +1805,273 @@ snp <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="c
 <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">| B       | WARNING: primary peak does not match the reference    |</span>
 <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">| A       | processed normally                                    |</span>
 <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">+---------+-------------------------------------------------------+</span>
+
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">il n'y a pas dans les donn&#233;es de facteur C. d'o&#249; les trois niveaux de</span>
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">facteur. sensible aux variations de param&#232;tre polySNP &#224; mon avis. &#224;</span>
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">surveiller.</span>
 snp$comments <span style="color: #268bd2; font-weight: bold;">&lt;-</span> plyr::<span style="color: #268bd2;">mapvalues</span><span style="color: #2aa198; font-weight: bold;">(</span>snp$comments,
                                 from <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">levels</span><span style="color: #b58900; font-weight: bold;">(</span>snp$comments<span style="color: #b58900; font-weight: bold;">)</span>,
-                                to <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">c</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #2aa198;">"D"</span>, <span style="color: #2aa198;">"C"</span>, <span style="color: #2aa198;">"B"</span>, <span style="color: #2aa198;">"A"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
+                                to <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">c</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #2aa198;">"D"</span>, <span style="color: #2aa198;">"A"</span>, <span style="color: #2aa198;">"B"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
 
 <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">correct NA symbol</span>
 snp$second<span style="color: #2aa198; font-weight: bold;">[</span>snp$second <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"-"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #b58900;">NA</span>
 
-<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>ggplot2<span style="color: #2aa198; font-weight: bold;">)</span>
-<span style="color: #268bd2;">theme_set</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">theme_minimal</span><span style="color: #b58900; font-weight: bold;">()</span><span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">corrige les erreurs de SNP. </span>
+snp$mutant<span style="color: #2aa198; font-weight: bold;">[</span>snp$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS60"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
+snp$mutant<span style="color: #2aa198; font-weight: bold;">[</span>snp$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS83"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
+snp$mutant<span style="color: #2aa198; font-weight: bold;">[</span>snp$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS92"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
+snp$mutant<span style="color: #2aa198; font-weight: bold;">[</span>snp$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS91"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
+snp$mutant<span style="color: #2aa198; font-weight: bold;">[</span>snp$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pW6"</span> <span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"strong"</span>
+</pre>
+</div>
+</div>
+</div>
 
-snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">ggplot</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">aes</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> refpos, fill <span style="color: #268bd2; font-weight: bold;">=</span> mutant<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
-  <span style="color: #268bd2;">geom_histogram</span><span style="color: #2aa198; font-weight: bold;">(</span>binwidth <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">10</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
-  <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~.<span style="color: #2aa198; font-weight: bold;">)</span>
+<div id="outline-container-sec-2-3-3" class="outline-4">
+<h4 id="sec-2-3-3"><span class="section-number-4">2.3.3</span> compte le nombre de séquence avec SNP<sub>II</sub> par position</h4>
+<div class="outline-text-4" id="text-2-3-3">
+<div class="org-src-container">
 
-snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+<pre class="src src-R">snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
   <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>!<span style="color: #268bd2;">is.na</span><span style="color: #b58900; font-weight: bold;">(</span>second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
   <span style="color: #268bd2;">ggplot</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">aes</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> refpos, fill <span style="color: #268bd2; font-weight: bold;">=</span> mutant<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
-  <span style="color: #268bd2;">geom_histogram</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">+</span>
-  <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~.<span style="color: #2aa198; font-weight: bold;">)</span>
+  <span style="color: #268bd2;">geom_histogram</span><span style="color: #2aa198; font-weight: bold;">(</span>binwidth <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">10</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+    <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~.<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+    <span style="color: #268bd2;">scale_fill_discrete</span><span style="color: #2aa198; font-weight: bold;">(</span>guide <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+    <span style="color: #268bd2;">xlab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Position sur la sequence de reference"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span> 
+    <span style="color: #268bd2;">ylab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">""</span><span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2;">ggsave</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"../../analysis/mutant-count.pdf"</span><span style="color: #2aa198; font-weight: bold;">)</span>
 </pre>
 </div>
 </div>
 </div>
-</div>
-<div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3"><span class="section-number-3">2.3</span> Alignement</h3>
-<div class="outline-text-3" id="text-2-3">
+
+<div id="outline-container-sec-2-3-4" class="outline-4">
+<h4 id="sec-2-3-4"><span class="section-number-4">2.3.4</span> compte le nombre de séquence avec SNP<sub>II</sub> de nature ATCG par position</h4>
+<div class="outline-text-4" id="text-2-3-4">
 <div class="org-src-container">
 
-<pre class="src src-R"><span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> .. content for \description{} (no empty lines) ..</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> Aligne les donn&#233;es de la s&#233;quence primaire avec ceux de la s&#233;quence</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> secondaire, en utilisant un algorithme TODO de type SM.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> .. content for \details{} ..</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@title</span><span style="color: #93a1a1;"> aligner</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@param</span><span style="color: #93a1a1;"> </span><span style="color: #268bd2;">seq</span><span style="color: #93a1a1;"> l'objet sangerseq d'int&#233;r&#234;t.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@param</span><span style="color: #93a1a1;"> </span><span style="color: #268bd2;">name</span><span style="color: #93a1a1;"> le nom de la s&#233;quence, NSE.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@return</span><span style="color: #93a1a1;"> un tableau contenant la position, la base du pic majeur,</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> la base du pic secondaire et le nom de la s&#233;quence.</span>
-<span style="color: #268bd2;">aligner</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>seq, name<span style="color: #2aa198; font-weight: bold;">)</span>
+<pre class="src src-R">snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>!<span style="color: #268bd2;">is.na</span><span style="color: #b58900; font-weight: bold;">(</span>second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>comments <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"A"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">group_by</span><span style="color: #2aa198; font-weight: bold;">(</span>refpos, mutant, second<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">summarise</span><span style="color: #2aa198; font-weight: bold;">(</span>count <span style="color: #268bd2; font-weight: bold;">=</span><span style="color: #268bd2;">n</span><span style="color: #b58900; font-weight: bold;">()</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">ggplot</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">aes</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> refpos, y <span style="color: #268bd2; font-weight: bold;">=</span> count, color <span style="color: #268bd2; font-weight: bold;">=</span> second, fill <span style="color: #268bd2; font-weight: bold;">=</span> second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">geom_point</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">geom_bar</span><span style="color: #2aa198; font-weight: bold;">(</span>stat <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"identity"</span>, alpha <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">0.2</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~second<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">xlab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Position sur la sequence de reference"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">ylab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Nombre de sequence"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">scale_fill_discrete</span><span style="color: #2aa198; font-weight: bold;">(</span>guide <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">scale_colour_discrete</span><span style="color: #2aa198; font-weight: bold;">(</span>guide <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">theme</span><span style="color: #2aa198; font-weight: bold;">(</span>panel.grid.major.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #b58900; font-weight: bold;">()</span>,
+        panel.grid.minor.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #b58900; font-weight: bold;">()</span>,
+        panel.grid.major.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_line</span><span style="color: #b58900; font-weight: bold;">(</span>size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">1</span>, colour <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"white"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2;">ggsave</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"../../analysis/mutant-second.pdf"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3-5" class="outline-4">
+<h4 id="sec-2-3-5"><span class="section-number-4">2.3.5</span> idem, avec un filtre sur le ratio des pics &gt; 0.2</h4>
+<div class="outline-text-4" id="text-2-3-5">
+<div class="org-src-container">
+
+<pre class="src src-R">snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>!<span style="color: #268bd2;">is.na</span><span style="color: #b58900; font-weight: bold;">(</span>second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>comments <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"A"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>ratioA <span style="color: #268bd2; font-weight: bold;">&gt;</span> <span style="color: #b58900;">0.2</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">group_by</span><span style="color: #2aa198; font-weight: bold;">(</span>refpos, mutant, second<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">summarise</span><span style="color: #2aa198; font-weight: bold;">(</span>count <span style="color: #268bd2; font-weight: bold;">=</span><span style="color: #268bd2;">n</span><span style="color: #b58900; font-weight: bold;">()</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">ggplot</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">aes</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> refpos, y <span style="color: #268bd2; font-weight: bold;">=</span> count, color <span style="color: #268bd2; font-weight: bold;">=</span> second, fill <span style="color: #268bd2; font-weight: bold;">=</span> second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">geom_point</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">geom_bar</span><span style="color: #2aa198; font-weight: bold;">(</span>stat <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"identity"</span>, alpha <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">0.2</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~second<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">xlab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Position sur la sequence de reference"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">ylab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Nombre de sequence"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">scale_fill_discrete</span><span style="color: #2aa198; font-weight: bold;">(</span>guide <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">scale_colour_discrete</span><span style="color: #2aa198; font-weight: bold;">(</span>guide <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">theme</span><span style="color: #2aa198; font-weight: bold;">(</span>panel.grid.major.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #b58900; font-weight: bold;">()</span>,
+        panel.grid.minor.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_blank</span><span style="color: #b58900; font-weight: bold;">()</span>,
+        panel.grid.major.x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_line</span><span style="color: #b58900; font-weight: bold;">(</span>size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">1</span>, colour <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"white"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
+<span style="color: #268bd2;">ggsave</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"../../analysis/mutant-second-filter.pdf"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3-6" class="outline-4">
+<h4 id="sec-2-3-6"><span class="section-number-4">2.3.6</span> distribution de la longueur de la tract de conversion</h4>
+<div class="outline-text-4" id="text-2-3-6">
+<div class="org-src-container">
+
+<pre class="src src-R">snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">rowwise</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>first <span style="color: #268bd2; font-weight: bold;">==</span> snp<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">ungroup</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">group_by</span><span style="color: #2aa198; font-weight: bold;">(</span>name, mutant<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">summarise</span><span style="color: #2aa198; font-weight: bold;">(</span>debut <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">min</span><span style="color: #b58900; font-weight: bold;">(</span>refpos<span style="color: #b58900; font-weight: bold;">)</span>, fin <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">max</span><span style="color: #b58900; font-weight: bold;">(</span>refpos<span style="color: #b58900; font-weight: bold;">)</span>, longueur <span style="color: #268bd2; font-weight: bold;">=</span> fin <span style="color: #268bd2; font-weight: bold;">-</span> debut<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">ggplot</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">aes</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> longueur, fill <span style="color: #268bd2; font-weight: bold;">=</span> mutant<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">geom_histogram</span><span style="color: #2aa198; font-weight: bold;">(</span>binwidth <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">10</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">facet_grid</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant~.<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">theme_minimal</span><span style="color: #2aa198; font-weight: bold;">(</span>base_family <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"Courier"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">theme</span><span style="color: #2aa198; font-weight: bold;">(</span>panel.ontop <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">TRUE</span>,
+        panel.grid.major.y <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_line</span><span style="color: #b58900; font-weight: bold;">(</span>size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">1</span>, color <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"white"</span><span style="color: #b58900; font-weight: bold;">)</span>,
+        panel.grid.minor.y <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">element_line</span><span style="color: #b58900; font-weight: bold;">(</span>size <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">0.5</span>, color <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"white"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">xlab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Distribution de la longueur de la tract de conversion"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">ylab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">""</span><span style="color: #2aa198; font-weight: bold;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3-7" class="outline-4">
+<h4 id="sec-2-3-7"><span class="section-number-4">2.3.7</span> distribution de la longueur des séquences</h4>
+<div class="outline-text-4" id="text-2-3-7">
+<div class="org-src-container">
+
+<pre class="src src-R">snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">group_by</span><span style="color: #2aa198; font-weight: bold;">(</span>name<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">summarise</span><span style="color: #2aa198; font-weight: bold;">(</span>max <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">max</span><span style="color: #b58900; font-weight: bold;">(</span>qpos<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">qplot</span><span style="color: #2aa198; font-weight: bold;">(</span>data <span style="color: #268bd2; font-weight: bold;">=</span>., max, binwidth <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">1</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">+</span>
+  <span style="color: #268bd2;">xlab</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"Distribution de la longueur des s&#233;quences"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-2-3-8" class="outline-4">
+<h4 id="sec-2-3-8"><span class="section-number-4">2.3.8</span> extraction de la séquence IUPAC</h4>
+<div class="outline-text-4" id="text-2-3-8">
+<div class="org-src-container">
+
+<pre class="src src-R"><span style="color: #268bd2;">mergeiupac</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>first, second<span style="color: #2aa198; font-weight: bold;">)</span>
 <span style="color: #2aa198; font-weight: bold;">{</span>
-  argname <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #268bd2;">deparse</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #268bd2;">substitute</span><span style="color: #268bd2; font-weight: bold;">(</span>seq<span style="color: #268bd2; font-weight: bold;">)</span><span style="color: #b58900; font-weight: bold;">)</span>
-  <span style="color: #268bd2;">pairwiseAlignment</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #268bd2;">primarySeq</span><span style="color: #268bd2; font-weight: bold;">(</span>seq<span style="color: #268bd2; font-weight: bold;">)</span>, <span style="color: #268bd2;">secondarySeq</span><span style="color: #268bd2; font-weight: bold;">(</span>seq<span style="color: #268bd2; font-weight: bold;">)</span>,
-                    type<span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"global-local"</span><span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #268bd2;">mismatchTable</span><span style="color: #b58900; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">ne garde que les bases litigieuses et leur position</span>
-    <span style="color: #268bd2;">select</span><span style="color: #b58900; font-weight: bold;">(</span>primaire   <span style="color: #268bd2; font-weight: bold;">=</span> PatternSubstring,
-           secondaire <span style="color: #268bd2; font-weight: bold;">=</span> SubjectSubstring,
-           position   <span style="color: #268bd2; font-weight: bold;">=</span> PatternStart<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">trim les positions de faible qualit&#233;</span>
-    <span style="color: #268bd2;">filter</span><span style="color: #b58900; font-weight: bold;">(</span>position <span style="color: #268bd2; font-weight: bold;">&gt;</span> <span style="color: #b58900;">40</span>, <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">premi&#232;re position de bonne qualit&#233;</span>
-           position <span style="color: #268bd2; font-weight: bold;">&lt;</span> <span style="color: #268bd2;">length</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #268bd2;">primarySeq</span><span style="color: #6c71c4; font-weight: bold;">(</span>seq<span style="color: #6c71c4; font-weight: bold;">)</span><span style="color: #268bd2; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">-</span> <span style="color: #b58900;">40</span><span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">derni&#232;re position de bonne qualit&#233;.</span>
-    <span style="color: #268bd2;">mutate</span><span style="color: #b58900; font-weight: bold;">(</span>name <span style="color: #268bd2; font-weight: bold;">=</span> name<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">ajoute une colonne avec le nom de la s&#233;quence.</span>
+  <span style="color: #859900; font-weight: bold;">if</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #268bd2;">is.na</span><span style="color: #268bd2; font-weight: bold;">(</span>second<span style="color: #268bd2; font-weight: bold;">)</span><span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #b58900; font-weight: bold;">{</span> Biostrings::<span style="color: #268bd2;">mergeIUPACLetters</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #268bd2;">paste0</span><span style="color: #6c71c4; font-weight: bold;">(</span>first, <span style="color: #2aa198;">""</span> <span style="color: #6c71c4; font-weight: bold;">)</span><span style="color: #268bd2; font-weight: bold;">)</span> <span style="color: #b58900; font-weight: bold;">}</span>
+  <span style="color: #859900; font-weight: bold;">else</span> <span style="color: #b58900; font-weight: bold;">{</span> Biostrings::<span style="color: #268bd2;">mergeIUPACLetters</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #268bd2;">paste0</span><span style="color: #6c71c4; font-weight: bold;">(</span>first, second<span style="color: #6c71c4; font-weight: bold;">)</span><span style="color: #268bd2; font-weight: bold;">)</span> <span style="color: #b58900; font-weight: bold;">}</span>
 <span style="color: #2aa198; font-weight: bold;">}</span>
 
-pW85_mm <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #268bd2;">aligner</span><span style="color: #2aa198; font-weight: bold;">(</span>pW85, <span style="color: #2aa198;">"pW85"</span><span style="color: #2aa198; font-weight: bold;">)</span>
-pW85_mm
-</pre>
-</div>
-</div>
-</div>
+snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>comments <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"A"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">rowwise</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">mutate</span><span style="color: #2aa198; font-weight: bold;">(</span>type <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">mergeiupac</span><span style="color: #b58900; font-weight: bold;">(</span>first, second<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">select</span><span style="color: #2aa198; font-weight: bold;">(</span>name, type<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> 
+  <span style="color: #268bd2;">ungroup</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span> seqlist 
 
-<div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4"><span class="section-number-3">2.4</span> Pooling</h3>
-<div class="outline-text-3" id="text-2-4">
-<div class="org-src-container">
-
-<pre class="src src-R">id_table <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #268bd2;">tbl_df</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">read.table</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #2aa198;">"../id_table.dat"</span>, stringsAsFactors <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span>, head <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">TRUE</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
-<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">rebascule les donn&#233;es litigieuses dans les bonnes cat&#233;gories</span>
-<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">voir les premiers scripts.</span>
-id_table$mutant<span style="color: #2aa198; font-weight: bold;">[</span>id_table$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS60-1073"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
-id_table$mutant<span style="color: #2aa198; font-weight: bold;">[</span>id_table$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS83-1073"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
-id_table$mutant<span style="color: #2aa198; font-weight: bold;">[</span>id_table$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS92-1073"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
-id_table$mutant<span style="color: #2aa198; font-weight: bold;">[</span>id_table$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pS91-1073"</span><span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"weak"</span>
-id_table$mutant<span style="color: #2aa198; font-weight: bold;">[</span>id_table$name <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"pW6-1073"</span> <span style="color: #2aa198; font-weight: bold;">]</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #2aa198;">"strong"</span>
-<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">&#233;limine les fichiers aux donn&#233;es manquantes</span>
-id_table <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>id_table, name !<span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"pS6-1073"</span>, name !<span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"pS9-1073"</span><span style="color: #2aa198; font-weight: bold;">)</span>
-
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> .. content for \description{} (no empty lines) ..</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> Appelle les bases principales et secondaires par fichier,</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> et aligne avec la s&#233;quence de r&#233;f&#233;rence.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> .. content for \details{} ..</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@title</span><span style="color: #93a1a1;"> mismatcher</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@param</span><span style="color: #93a1a1;"> </span><span style="color: #268bd2;">sequence</span><span style="color: #93a1a1;"> char, le nom de la s&#233;quence.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@param</span><span style="color: #93a1a1;"> </span><span style="color: #268bd2;">ref</span><span style="color: #93a1a1;"> DNAString, la s&#233;quence de r&#233;f&#233;rence.</span>
-<span style="color: #93a1a1; font-weight: bold;">##</span><span style="color: #93a1a1; font-weight: bold;">'</span><span style="color: #93a1a1;"> </span><span style="color: #859900; font-weight: bold;">@return</span>
-<span style="color: #268bd2;">mismatcher</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>sequence, ref<span style="color: #2aa198; font-weight: bold;">)</span>
-<span style="color: #2aa198; font-weight: bold;">{</span>
-  <span style="color: #268bd2;">baseCaller</span><span style="color: #b58900; font-weight: bold;">(</span>query <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">paste0</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #2aa198;">"../spectrograms/"</span>, sequence, <span style="color: #2aa198;">".ab1"</span><span style="color: #268bd2; font-weight: bold;">)</span>, ref<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">aligner</span><span style="color: #b58900; font-weight: bold;">(</span>., sequence<span style="color: #b58900; font-weight: bold;">)</span>
-<span style="color: #2aa198; font-weight: bold;">}</span>
+<span style="color: #268bd2;">lapply</span><span style="color: #2aa198; font-weight: bold;">(</span>
+  <span style="color: #268bd2;">split</span><span style="color: #b58900; font-weight: bold;">(</span>seqlist, seqlist$name<span style="color: #b58900; font-weight: bold;">)</span>, <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">split by name</span>
+  <span style="color: #859900; font-weight: bold;">function</span><span style="color: #b58900; font-weight: bold;">(</span>x<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #b58900; font-weight: bold;">{</span> 
+    <span style="color: #268bd2;">paste0</span><span style="color: #268bd2; font-weight: bold;">(</span> 
+      <span style="color: #2aa198;">"&gt;"</span>, x$name<span style="color: #6c71c4; font-weight: bold;">[</span><span style="color: #b58900;">1</span><span style="color: #6c71c4; font-weight: bold;">]</span>, <span style="color: #2aa198;">"\n"</span>, <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">copie le nom de la sequence avec le fasta sep</span>
+      <span style="color: #268bd2;">gsub</span><span style="color: #6c71c4; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">toString</span><span style="color: #859900; font-weight: bold;">(</span>x$type<span style="color: #859900; font-weight: bold;">)</span>, <span style="color: #93a1a1;"># </span><span style="color: #93a1a1;">et la sequence iupac</span>
+           pattern <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">", "</span>,
+           replace <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">""</span> <span style="color: #6c71c4; font-weight: bold;">)</span><span style="color: #268bd2; font-weight: bold;">)</span>
+  <span style="color: #b58900; font-weight: bold;">}</span>
+<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">unlist</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span>
+  seqlist
 
 
-<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">baseCaller(query = paste0("../spectrograms/", id_table$name[1], ".ab1"), ref)</span>
-<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">test_id_table &lt;- id_table %&gt;% sample_n(30)</span>
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">1. concatenate sequence</span>
+<span style="color: #93a1a1;">## </span><span style="color: #93a1a1;">2. prepend sequence name.</span>
 
-result_table <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #268bd2;">do.call</span><span style="color: #2aa198; font-weight: bold;">(</span>
-  rbind,
-  <span style="color: #268bd2;">lapply</span><span style="color: #b58900; font-weight: bold;">(</span>
-    <span style="color: #268bd2;">lapply</span><span style="color: #268bd2; font-weight: bold;">(</span>id_table$name, <span style="color: #859900; font-weight: bold;">function</span><span style="color: #6c71c4; font-weight: bold;">(</span>x<span style="color: #6c71c4; font-weight: bold;">)</span> <span style="color: #268bd2;">mismatcher</span><span style="color: #6c71c4; font-weight: bold;">(</span>sequence <span style="color: #268bd2; font-weight: bold;">=</span> x, ref <span style="color: #268bd2; font-weight: bold;">=</span> ref<span style="color: #6c71c4; font-weight: bold;">)</span><span style="color: #268bd2; font-weight: bold;">)</span>,
-    data.frame
-  <span style="color: #b58900; font-weight: bold;">)</span>
-<span style="color: #2aa198; font-weight: bold;">)</span>
-
-<span style="color: #268bd2;">write.csv</span><span style="color: #2aa198; font-weight: bold;">(</span>result_table, file <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"result_table"</span><span style="color: #2aa198; font-weight: bold;">)</span>
-
-result_table <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">tbl_df</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">inner_join</span><span style="color: #2aa198; font-weight: bold;">(</span>id_table, by <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"name"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>mutant <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"strong"</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">print</span><span style="color: #2aa198; font-weight: bold;">()</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5"><span class="section-number-3">2.5</span> Sens des mutations</h3>
-<div class="outline-text-3" id="text-2-5">
-<div class="org-src-container">
-
-<pre class="src src-R"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">+TODO: ?mergeIUPACLetters</span>
-
-  iupac_code <span style="color: #268bd2; font-weight: bold;">&lt;-</span>
-  <span style="color: #2aa198;">"</span>
-<span style="color: #2aa198;">  iupac,meaning</span>
-<span style="color: #2aa198;">  A,A</span>
-<span style="color: #2aa198;">  C,C</span>
-<span style="color: #2aa198;">  G,G</span>
-<span style="color: #2aa198;">  T,T</span>
-<span style="color: #2aa198;">  M,AC</span>
-<span style="color: #2aa198;">  R,AG</span>
-<span style="color: #2aa198;">  W,AT</span>
-<span style="color: #2aa198;">  S,CG</span>
-<span style="color: #2aa198;">  Y,CT</span>
-<span style="color: #2aa198;">  K,GT</span>
-<span style="color: #2aa198;">  V,ACG</span>
-<span style="color: #2aa198;">  H,ACT</span>
-<span style="color: #2aa198;">  D,AGT</span>
-<span style="color: #2aa198;">  B,CGT</span>
-<span style="color: #2aa198;">  X,GATC</span>
-<span style="color: #2aa198;">  N,GATC</span>
-<span style="color: #2aa198;">  "</span>
-  <span style="color: #268bd2;">read.csv</span><span style="color: #2aa198; font-weight: bold;">(</span>text <span style="color: #268bd2; font-weight: bold;">=</span> iupac_code, stringsAsFactors <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #b58900;">FALSE</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> <span style="color: #268bd2;">tbl_df</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span> iupac
-
-  <span style="color: #268bd2;">is_iupac</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>base<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2;">ifelse</span><span style="color: #2aa198; font-weight: bold;">(</span>base <span style="color: #268bd2; font-weight: bold;">%</span><span style="color: #859900; font-weight: bold;">in</span><span style="color: #268bd2; font-weight: bold;">%</span> <span style="color: #268bd2;">c</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #2aa198;">"A"</span>, <span style="color: #2aa198;">"T"</span>, <span style="color: #2aa198;">"C"</span>, <span style="color: #2aa198;">"G"</span><span style="color: #b58900; font-weight: bold;">)</span>, <span style="color: #b58900;">FALSE</span>, <span style="color: #b58900;">TRUE</span><span style="color: #2aa198; font-weight: bold;">)</span>
-
-  <span style="color: #268bd2;">iupacker</span> <span style="color: #268bd2; font-weight: bold;">&lt;-</span> <span style="color: #859900; font-weight: bold;">function</span><span style="color: #2aa198; font-weight: bold;">(</span>subject, query<span style="color: #2aa198; font-weight: bold;">)</span>
+snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">select</span><span style="color: #2aa198; font-weight: bold;">(</span>wt, refpos<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">arrange</span><span style="color: #2aa198; font-weight: bold;">(</span>refpos<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">unique</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
   <span style="color: #2aa198; font-weight: bold;">{</span>
+    <span style="color: #268bd2;">toString</span><span style="color: #b58900; font-weight: bold;">(</span>.$wt<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> <span style="color: #268bd2;">gsub</span><span style="color: #b58900; font-weight: bold;">(</span>x <span style="color: #268bd2; font-weight: bold;">=</span> ., pattern <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">", "</span>, replace <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">""</span><span style="color: #b58900; font-weight: bold;">)</span>
+  <span style="color: #2aa198; font-weight: bold;">}</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">paste0</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"&gt;wt"</span>, <span style="color: #2aa198;">"\n"</span>, .<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span>
+  refsnp
 
-    <span style="color: #268bd2;">lapply</span><span style="color: #b58900; font-weight: bold;">(</span>
-      <span style="color: #268bd2;">str_split</span><span style="color: #268bd2; font-weight: bold;">(</span><span style="color: #268bd2;">paste0</span><span style="color: #6c71c4; font-weight: bold;">(</span>subject, query<span style="color: #6c71c4; font-weight: bold;">)</span>, <span style="color: #2aa198;">""</span><span style="color: #268bd2; font-weight: bold;">)</span>,
-      sort<span style="color: #b58900; font-weight: bold;">)</span>
+<span style="color: #268bd2;">cat</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #268bd2;">c</span><span style="color: #b58900; font-weight: bold;">(</span>refsnp, seqlist<span style="color: #b58900; font-weight: bold;">)</span>, sep <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"\n"</span>,
+    file <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"iupac_seqlist.fasta"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+
+snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>qpos <span style="color: #268bd2; font-weight: bold;">==</span> <span style="color: #2aa198;">"457"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+
+snp <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">rowwise</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span>first !<span style="color: #268bd2; font-weight: bold;">=</span> snp &amp; first !<span style="color: #268bd2; font-weight: bold;">=</span> wt<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #268bd2;">qplot</span><span style="color: #2aa198; font-weight: bold;">(</span>data <span style="color: #268bd2; font-weight: bold;">=</span> ., refpos, geom <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"histogram"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+
+  <span style="color: #268bd2;">select</span><span style="color: #2aa198; font-weight: bold;">(</span>first<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
+  <span style="color: #2aa198; font-weight: bold;">{</span>
+    <span style="color: #268bd2;">as.factor</span><span style="color: #b58900; font-weight: bold;">(</span>.$first<span style="color: #b58900; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span> <span style="color: #268bd2;">levels</span><span style="color: #b58900; font-weight: bold;">()</span>
   <span style="color: #2aa198; font-weight: bold;">}</span>
-
-  result_table <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #268bd2;">filter</span><span style="color: #2aa198; font-weight: bold;">(</span> <span style="color: #268bd2;">is_iupac</span><span style="color: #b58900; font-weight: bold;">(</span>SubjectSubstring<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-    <span style="color: #268bd2;">inner_join</span><span style="color: #2aa198; font-weight: bold;">(</span>y <span style="color: #268bd2; font-weight: bold;">=</span> iupac, by <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">c</span><span style="color: #b58900; font-weight: bold;">(</span><span style="color: #2aa198;">"SubjectSubstring"</span> <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #2aa198;">"iupac"</span><span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span>
 </pre>
 </div>
 </div>
 </div>
+<div id="outline-container-sec-2-3-9" class="outline-4">
+<h4 id="sec-2-3-9"><span class="section-number-4">2.3.9</span> read phd files</h4>
+<div class="outline-text-4" id="text-2-3-9">
+<p>
+Dans le dossier snp-calling, pour chaque fichier contenant l'extension <code>.poly</code>,
+prendre la dernière ligne, remplacer tous les doubles espaces par des commas,
+ajouter <code>weak</code> dans la dernière colonne, et sortir dans le dossier <code>csv</code>.
+</p>
 
-<div id="outline-container-sec-2-6" class="outline-3">
-<h3 id="sec-2-6"><span class="section-number-3">2.6</span> Analyses</h3>
-<div class="outline-text-3" id="text-2-6">
 <div class="org-src-container">
 
-<pre class="src src-R"><span style="color: #268bd2;">peakAmpMatrix</span><span style="color: #2aa198; font-weight: bold;">(</span>pW85<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">as.data.frame</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">tbl_df</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">mutate</span><span style="color: #2aa198; font-weight: bold;">(</span>pos <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">rownames</span><span style="color: #b58900; font-weight: bold;">(</span>.<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">gather</span><span style="color: #2aa198; font-weight: bold;">(</span>trace, value, V1:V4<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span> peakmatrix
+<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
 
-<span style="color: #268bd2;">traceMatrix</span><span style="color: #2aa198; font-weight: bold;">(</span>pW85<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">as.data.frame</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">%&gt;%</span>
-  <span style="color: #268bd2;">tbl_df</span><span style="color: #2aa198; font-weight: bold;">()</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">mutate</span><span style="color: #2aa198; font-weight: bold;">(</span>pos <span style="color: #268bd2; font-weight: bold;">=</span> <span style="color: #268bd2;">rownames</span><span style="color: #b58900; font-weight: bold;">(</span>.<span style="color: #b58900; font-weight: bold;">)</span><span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">%&gt;%</span>
-  <span style="color: #268bd2;">gather</span><span style="color: #2aa198; font-weight: bold;">(</span>trace, value, V1:V4<span style="color: #2aa198; font-weight: bold;">)</span> <span style="color: #268bd2; font-weight: bold;">-&gt;</span> tracematrix
+<span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/data/snp-calling/
+
+<span style="color: #859900; font-weight: bold;">for</span> file<span style="color: #859900; font-weight: bold;"> in</span> ./weak/*.poly
+<span style="color: #859900; font-weight: bold;">do</span>
+    tail -n +1 $<span style="color: #268bd2;">file</span> | <span style="color: #b58900; font-weight: bold;">\</span>
+        sed <span style="color: #2aa198;">'s/  /,/g;s/$/,weak/'</span> &gt; ./csv/<span style="color: #6c71c4; font-weight: bold;">`basename $file`</span>.csv
+<span style="color: #859900; font-weight: bold;">done</span>
+
+
+<span style="color: #859900; font-weight: bold;">for</span> file<span style="color: #859900; font-weight: bold;"> in</span> ./strong/*.poly
+<span style="color: #859900; font-weight: bold;">do</span>
+    tail -n +1 $<span style="color: #268bd2;">file</span> | <span style="color: #b58900; font-weight: bold;">\</span>
+        sed <span style="color: #2aa198;">'s/  /,/g;s/$/,strong/'</span> &gt; ./csv/<span style="color: #6c71c4; font-weight: bold;">`basename $file`</span>.csv
+<span style="color: #859900; font-weight: bold;">done</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
+
+<span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/data/snp-calling/strong
+
+muscle <span style="color: #b58900; font-weight: bold;">\</span>
+    -profile <span style="color: #b58900; font-weight: bold;">\</span>
+    -objscore ps <span style="color: #b58900; font-weight: bold;">\</span>
+    -maxmb <span style="color: #6c71c4;">50</span> <span style="color: #b58900; font-weight: bold;">\</span>
+    -in1 aln-strong-wt.fst <span style="color: #b58900; font-weight: bold;">\</span>
+    -in2 pS1-1073.ab1.seq <span style="color: #b58900; font-weight: bold;">\</span>
+    -out test.muscle
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-R"><span style="color: #268bd2;">setwd</span><span style="color: #2aa198; font-weight: bold;">(</span><span style="color: #2aa198;">"~/stage/seq_novembre/data/snp-calling"</span><span style="color: #2aa198; font-weight: bold;">)</span>
+
+<span style="color: #268bd2; font-weight: bold;">library</span><span style="color: #2aa198; font-weight: bold;">(</span>readr<span style="color: #2aa198; font-weight: bold;">)</span>
+test.poly <span style="color: #268bd2; font-weight: bold;">&lt;-</span> read_csv
+
+test.poly
 </pre>
 </div>
 </div>
 </div>
 </div>
-
+</div>
 
 <div id="outline-container-sec-3" class="outline-2">
 <h2 id="sec-3"><span class="section-number-2">3</span> Script Principal</h2>
 <div class="outline-text-2" id="text-3">
 <div class="org-src-container">
 
-<pre class="src src-sh"><span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/scripts
+<pre class="src src-sh"><span style="color: #93a1a1;">#</span><span style="color: #93a1a1;">!/bin/</span><span style="color: #859900; font-weight: bold;">bash</span>
+
+<span style="color: #657b83; font-weight: bold;">cd</span> ~/stage/seq_novembre/scripts
 
 chmod +x *.sh
 
@@ -2385,22 +2557,27 @@ décide de renommer <code>N</code>. Donc modification du script
 </li>
 <li><a href="#sec-2">2. Analyse des positions hétérozygotes</a>
 <ul class="nav">
-<li><a href="#sec-2-1">2.1. Base calling</a>
+<li><a href="#sec-2-1">2.1. Bascule des fichiers mal appelés</a></li>
+<li><a href="#sec-2-2">2.2. Base calling</a>
 <ul class="nav">
-<li><a href="#sec-2-1-1">2.1.1. via sangerseqR</a></li>
-<li><a href="#sec-2-1-2">2.1.2. via phred</a></li>
-<li><a href="#sec-2-1-3">2.1.3. via polySNP</a></li>
+<li><a href="#sec-2-2-1">2.2.1. via sangerseqR</a></li>
+<li><a href="#sec-2-2-2">2.2.2. via phred</a></li>
+<li><a href="#sec-2-2-3">2.2.3. via polySNP</a></li>
 </ul>
 </li>
-<li><a href="#sec-2-2">2.2. analyses</a>
+<li><a href="#sec-2-3">2.3. Analyses</a>
 <ul class="nav">
-<li><a href="#sec-2-2-1">2.2.1. get and clean data</a></li>
+<li><a href="#sec-2-3-1">2.3.1. Boilerplate</a></li>
+<li><a href="#sec-2-3-2">2.3.2. get and clean data</a></li>
+<li><a href="#sec-2-3-3">2.3.3. compte le nombre de séquence avec SNP<sub>II</sub> par position</a></li>
+<li><a href="#sec-2-3-4">2.3.4. compte le nombre de séquence avec SNP<sub>II</sub> de nature ATCG par position</a></li>
+<li><a href="#sec-2-3-5">2.3.5. idem, avec un filtre sur le ratio des pics &gt; 0.2</a></li>
+<li><a href="#sec-2-3-6">2.3.6. distribution de la longueur de la tract de conversion</a></li>
+<li><a href="#sec-2-3-7">2.3.7. distribution de la longueur des séquences</a></li>
+<li><a href="#sec-2-3-8">2.3.8. extraction de la séquence IUPAC</a></li>
+<li><a href="#sec-2-3-9">2.3.9. read phd files</a></li>
 </ul>
 </li>
-<li><a href="#sec-2-3">2.3. Alignement</a></li>
-<li><a href="#sec-2-4">2.4. Pooling</a></li>
-<li><a href="#sec-2-5">2.5. Sens des mutations</a></li>
-<li><a href="#sec-2-6">2.6. Analyses</a></li>
 </ul>
 </li>
 <li><a href="#sec-3">3. Script Principal</a></li>
@@ -2421,9 +2598,9 @@ décide de renommer <code>N</code>. Donc modification du script
 </nav>
 </div></div></div>
 <footer id="postamble" class="">
-<div><p class="author">Author: Samuel BARRETO</p>
-<p class="date">Created: 2016-01-12 Tue 17:15</p>
-<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.3.3)</p>
+<div><p class="author">Auteur: Samuel BARRETO</p>
+<p class="date">Created: 2016-01-19 Tue 07:55</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.3.2)</p>
 </div>
 </footer>
 </body>

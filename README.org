@@ -821,7 +821,7 @@ bonnes catégories, de façon à ce qu'ils soient alignés avec la bonne référ
 | "pS91" | "weak"   |
 | "pW6"  | "strong" |
 
-J'ai pas choisi la méthode la plus subtile. Ça fera le taf, pour l'instant. 
+Je n'ai pas choisi la méthode la plus subtile. Ça fera le taf, pour l'instant. 
 
 #+BEGIN_SRC sh recaller.sh
   #!/bin/bash
@@ -965,7 +965,7 @@ Le script suivant effectue le base-calling avec phred directement.
       ## emplacement des fichiers
       -id ./spectrograms \
       ## trim les bases à gauche et droite en fonction de la qualité
-      -trim_alt \
+      -trim_alt "" \
       ## selon la probabilité d'erreur suivante.
       -trim_cutoff 0.05 \
       ## écrit les séquences trimmées dans un fichier phred
@@ -985,12 +985,13 @@ des SNP, au format fasta. Le but est de déduire les positions de SNP, pour
 ensuite aligner les séquences en sortie de phred avec cet alignement de
 référence.
 
+**** alignement des références
 Cet alignement est effectué avec le programme EMBOSS ~needle~, qui utilise
 l'algorithme de Needleman-Wunsch. L'alignement se fait sur toute la longueur des
 séquences. Dans un premier temps, j'utilisais la séquence référence non
-corrigée, mais elle semble présenter un indel à la position 
-
-**** alignement des références
+corrigée, mais elle semble présenter un indel à la position. Il faut de plus
+utiliser le /reverse complement/ des séquences de référence, autrement muscle se
+perd dans l'étape d'alignement. 
 #+BEGIN_SRC sh :tangle ./scripts/aligne_reference_snp.sh
   #!/bin/bash
   ##
@@ -1022,7 +1023,7 @@ corrigée, mais elle semble présenter un indel à la position
       -gapextend 0.5
 #+END_SRC
 
-**** polySNP
+**** documentation polySNP
 
 La documentation du programme =polySNP=. 
 
@@ -1061,6 +1062,7 @@ les fichiers en cours d'analyse soient dans le dossier courant.
 
 - [X] peut-être utiliser des softlinks, ou alors carrément copier les différents
   documents dans un dossier de travail réservé.
+**** clones weak
 
 Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
 #+BEGIN_SRC sh :tangle scripts/polysniper-weak.sh
@@ -1068,10 +1070,11 @@ Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
 
   ####
   #### POLYSNP
+  ####
   ###
-  ### le script qui effectue le base-calling via phred, qui détermine les
+  ### Ce script qui effectue le base-calling via phred, détermine les
   ### positions de SNP qui sont aux positions attendues d'après les alignements de
-  ### référence, et qui détermine pour chaque position attendue les deux bases
+  ### référence, et détermine pour chaque position attendue les deux bases
   ### appelées à chaque pic.
 
   cd ~/stage/seq_novembre/data/snp-calling/weak
@@ -1091,6 +1094,7 @@ Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
   done
 #+END_SRC
 
+**** clones strong
 Le script suivant permet d'obtenir le tableau de résultat pour les clones strong.
 #+BEGIN_SRC sh :tangle scripts/polysniper-strong.sh
   #!/bin/bash 
@@ -1120,6 +1124,7 @@ Le script suivant permet d'obtenir le tableau de résultat pour les clones stron
   done
 #+END_SRC
 
+**** tous les clones
 Le script suivant permet d'obtenir les deux tableaux de résultats, et élimine
 les lignes vides. (temps d'exécution approximatif : 2min.)
 
@@ -1142,20 +1147,30 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
   # dans un fichier csv. malin...)
   # prepend header.csv describing fields to results
   # table and remove space
-  { head -n 1 header.csv |          \
-          sed 's/ /\./g' ;          \
-    cat weak/weak-polysnp.csv |     \
-        sed 's/,\ / /g' }  |        \
+  { head -n 1 header.csv | sed 's/ /\./g' ;          \
+    cat weak/weak-polysnp.csv | sed 's/,\ / /g' }  | \
       cat > weak.csv
 
-  { head -n 1 header.csv |          \
-          sed 's/ /\./g' ;          \
-    cat strong/strong-polysnp.csv | \
-        sed 's/,\ / /g' } |         \
+  { head -n 1 header.csv | sed 's/ /\./g' ; \
+    cat strong/strong-polysnp.csv |sed 's/,\ / /g' } | \
       cat > strong.csv
 #+END_SRC
 
 ** Analyses 
+*** Boilerplate
+
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  setwd("~/stage/seq_novembre/data/snp-calling")
+  library(dplyr)
+  library(ggplot2)
+  library(viridis)
+
+  theme_set(theme_gray(base_size = 9, base_family = "Courier") +
+            theme(panel.grid.major.y = element_line(size = 1, color = "white"),
+                  panel.grid.major.x = element_blank(),
+                  panel.grid.minor.x = element_blank()))
+#+END_SRC  
+
 *** get and clean data
 ~polySNP~ introduit une colonne de commentaire, bien trop longue, remplacée par
 un facteur à quatre niveaux. 
@@ -1168,11 +1183,6 @@ un facteur à quatre niveaux.
 | A       | processed normally                                    |
 
 #+BEGIN_SRC R :tangle scripts/polysnip.R
-  setwd("~/stage/seq_novembre/data/snp-calling")
-
-  library(dplyr)
-  library(ggplot2)
-
   read_polysnp <- function(filename)
   {
     read.csv(filename, stringsAsFactors = FALSE) %>%
@@ -1182,6 +1192,7 @@ un facteur à quatre niveaux.
         -analysis,
         -corrected.proportion.A,
         -corrected.proportion.B,
+        -uncorrected.proportion.B,
         name   = file,
         refpos = reference.position,
         qpos   = SCF.position,
@@ -1189,8 +1200,7 @@ un facteur à quatre niveaux.
         snp    = B.base,
         first  = first.call,
         second = second.call,
-        uncorA = uncorrected.proportion.A,
-        uncorB = uncorrected.proportion.B,
+        ratioA = uncorrected.proportion.A,
         farea  = first.area,
         sarea  = second.area
       ) %>%
@@ -1234,42 +1244,196 @@ un facteur à quatre niveaux.
   snp$mutant[snp$name == "pW6" ] <- "strong"
 #+END_SRC
 
-*** eda 
+*** compte le nombre de séquence avec SNP_II par position
 #+BEGIN_SRC R :tangle scripts/polysnip.R
-  library(ggplot2)
-  theme_set(theme_gray(base_size = 9, base_family = "Courier"))
-
-  snp %>%
-    group_by(comments) %>%
-    summarise(count = n())
-
-  snp %>%
-    filter(comments == "B") %>%
-    ggplot(aes(x = refpos, fill = mutant)) +
-    geom_histogram(binwidth = 10) +
-    facet_grid(mutant~.)
-
-  snp %>%
-    filter(!is.na(second)) #%>%
-    ggplot(aes(x = refpos, fill = mutant)) +
-    geom_histogram(binwidth = 1) +
-    facet_grid(mutant~.)
-
   snp %>%
     filter(!is.na(second)) %>%
+    ggplot(aes(x = refpos, fill = mutant)) +
+    geom_histogram(binwidth = 10) +
+      facet_grid(mutant~.) +
+      scale_fill_discrete(guide = FALSE) +
+      xlab("Position sur la sequence de reference") + 
+      ylab("")
+  ggsave("../../analysis/mutant-count.pdf")
+#+END_SRC 
+
+*** compte le nombre de séquence avec SNP_II de nature ATCG par position
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  snp %>%
+    filter(!is.na(second)) %>%
+    filter(comments == "A") %>%
     group_by(refpos, mutant, second) %>%
     summarise(count =n()) %>%
     ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
     geom_point() +
     geom_bar(stat = "identity", alpha = 0.2) +
+    facet_grid(mutant~second) +
     xlab("Position sur la sequence de reference") +
-    ylab("Nombre de sequence montrant un pic secondaire") +
+    ylab("Nombre de sequence") +
     scale_fill_discrete(guide = FALSE) +
-    scale_colour_discrete(guide = FALSE)
+    scale_colour_discrete(guide = FALSE) +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.major.x = element_line(size = 1, colour = "white"))
+  ggsave("../../analysis/mutant-second.pdf")
 #+END_SRC
-* Script Principal
 
-#+BEGIN_SRC sh :tangle ./scripts/run_analysis.sh
+*** idem, avec un filtre sur le ratio des pics > 0.2
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  snp %>%
+    filter(!is.na(second)) %>%
+    filter(comments == "A") %>%
+    filter(ratioA > 0.2) %>%
+    group_by(refpos, mutant, second) %>%
+    summarise(count =n()) %>%
+    ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
+    geom_point() +
+    geom_bar(stat = "identity", alpha = 0.2) +
+    facet_grid(mutant~second) +
+    xlab("Position sur la sequence de reference") +
+    ylab("Nombre de sequence") +
+    scale_fill_discrete(guide = FALSE) +
+    scale_colour_discrete(guide = FALSE) +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.major.x = element_line(size = 1, colour = "white"))
+  ggsave("../../analysis/mutant-second-filter.pdf")
+#+END_SRC
+
+*** distribution de la longueur de la tract de conversion
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  snp %>%
+    rowwise() %>%
+    filter(first == snp) %>%
+    ungroup() %>%
+    group_by(name, mutant) %>%
+    summarise(debut = min(refpos), fin = max(refpos), longueur = fin - debut) %>%
+    ggplot(aes(x = longueur, fill = mutant)) +
+    geom_histogram(binwidth = 10) +
+    facet_grid(mutant~.) +
+    theme_minimal(base_family = "Courier") +
+    theme(panel.ontop = TRUE,
+          panel.grid.major.y = element_line(size = 1, color = "white"),
+          panel.grid.minor.y = element_line(size = 0.5, color = "white")) +
+    xlab("Distribution de la longueur de la tract de conversion") +
+    ylab("")
+#+END_SRC
+
+*** distribution de la longueur des séquences
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  snp %>%
+    group_by(name) %>%
+    summarise(max = max(qpos)) %>%
+    qplot(data =., max, binwidth = 1) +
+    xlab("Distribution de la longueur des séquences") 
+#+END_SRC
+*** extraction de la séquence IUPAC
+#+BEGIN_SRC R :tangle scripts/polysnip.R
+  mergeiupac <- function(first, second)
+  {
+    if(is.na(second)) { Biostrings::mergeIUPACLetters(paste0(first, "" )) }
+    else { Biostrings::mergeIUPACLetters(paste0(first, second)) }
+  }
+
+  snp %>%
+    filter(comments == "A") %>%
+    rowwise() %>%
+    mutate(type = mergeiupac(first, second)) %>%
+    select(name, type) %>% 
+    ungroup() -> seqlist 
+
+  lapply(
+    split(seqlist, seqlist$name), # split by name
+    function(x) { 
+      paste0( 
+        ">", x$name[1], "\n", # copie le nom de la sequence avec le fasta sep
+        gsub(x = toString(x$type), # et la sequence iupac
+             pattern = ", ",
+             replace = "" ))
+    }
+  ) %>%
+    unlist() ->
+    seqlist
+
+
+  ## 1. concatenate sequence
+  ## 2. prepend sequence name.
+
+  snp %>%
+    select(wt, refpos) %>%
+    arrange(refpos) %>%
+    unique() %>%
+    {
+      toString(.$wt) %>% gsub(x = ., pattern = ", ", replace = "")
+    } %>%
+    paste0(">wt", "\n", .) ->
+    refsnp
+
+  cat(c(refsnp, seqlist), sep = "\n",
+      file = "iupac_seqlist.fasta")
+
+  snp %>% filter(qpos == "457")
+
+  snp %>%
+    rowwise() %>%
+    filter(first != snp & first != wt) %>%
+    qplot(data = ., refpos, geom = "histogram")
+
+    select(first) %>%
+    {
+      as.factor(.$first) %>% levels()
+    }
+#+END_SRC
+*** read phd files
+Dans le dossier snp-calling, pour chaque fichier contenant l'extension ~.poly~,
+prendre la dernière ligne, remplacer tous les doubles espaces par des commas,
+ajouter ~weak~ dans la dernière colonne, et sortir dans le dossier ~csv~.
+
+#+BEGIN_SRC sh
+  #!/bin/bash
+
+  cd ~/stage/seq_novembre/data/snp-calling/
+
+  for file in ./weak/*.poly
+  do
+      tail -n +1 $file | \
+          sed 's/  /,/g;s/$/,weak/' > ./csv/`basename $file`.csv
+  done
+
+
+  for file in ./strong/*.poly
+  do
+      tail -n +1 $file | \
+          sed 's/  /,/g;s/$/,strong/' > ./csv/`basename $file`.csv
+  done
+#+END_SRC
+
+#+BEGIN_SRC sh
+  #!/bin/bash
+
+  cd ~/stage/seq_novembre/data/snp-calling/strong
+
+  muscle \
+      -profile \
+      -objscore ps \
+      -maxmb 50 \
+      -in1 aln-strong-wt.fst \
+      -in2 pS1-1073.ab1.seq \
+      -out test.muscle
+#+END_SRC
+
+#+BEGIN_SRC R
+  setwd("~/stage/seq_novembre/data/snp-calling")
+
+  library(readr)
+  test.poly <- read_csv
+
+  test.poly
+#+END_SRC
+
+* Makefile 
+
+#+BEGIN_SRC make :tangle ./Makefile
   #!/bin/bash
 
   cd ~/stage/seq_novembre/scripts
@@ -1436,3 +1600,5 @@ tree ./ -L 2
 #+TODO: TODO FIX! | DONE
 # #+OPTIONS: num:t H:4
 #+OPTIONS: toc:3
+#+BABEL: :session *R* :cache yes :results output graphics :exports both :tangle yes
+
