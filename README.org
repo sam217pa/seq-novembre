@@ -12,7 +12,6 @@ Le dossier contient les données du séquençage des deux plaques envoyées à l
 suite des manips de Florence. 
 
 * Analyse globale des SNP 
-# #+TOC: headlines 2 local
 
 [2016-01-06 Wed] La première approche globale consiste à extraire les données
 de séquence des fichiers .ab1 contenant les spectrogrammes et de les convertir
@@ -823,7 +822,7 @@ bonnes catégories, de façon à ce qu'ils soient alignés avec la bonne référ
 
 Je n'ai pas choisi la méthode la plus subtile. Ça fera le taf, pour l'instant. 
 
-#+BEGIN_SRC sh recaller.sh
+#+BEGIN_SRC sh ./scripts/recaller.sh
   #!/bin/bash
 
   ## TODO peut-être trouver une solution plus "élégante…"
@@ -1152,13 +1151,11 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
       cat > weak.csv
 
   { head -n 1 header.csv | sed 's/ /\./g' ; \
-    cat strong/strong-polysnp.csv |sed 's/,\ / /g' } | \
+    cat strong/strong-polysnp.csv | sed 's/,\ / /g' } | \
       cat > strong.csv
 #+END_SRC
-
 ** Analyses 
 *** Boilerplate
-
 #+BEGIN_SRC R :tangle scripts/polysnip.R
   setwd("~/stage/seq_novembre/data/snp-calling")
   library(dplyr)
@@ -1408,6 +1405,7 @@ ajouter ~weak~ dans la dernière colonne, et sortir dans le dossier ~csv~.
   done
 #+END_SRC
 
+Un exemple de script utilisant /muscle/ en ligne de commande.  
 #+BEGIN_SRC sh
   #!/bin/bash
 
@@ -1431,37 +1429,107 @@ ajouter ~weak~ dans la dernière colonne, et sortir dans le dossier ~csv~.
   test.poly
 #+END_SRC
 
+** Comparaison du polymorphisme SNP / ΦSNP
+
+#+BEGIN_SRC sh
+  # copie les alignments
+  cp ../weak/aln-weak-wt.fst .
+  cp ../../spectrograms/pW85-1073.ab1 .
+
+  # run polySNP
+  polySNP -r aln-weak-wt.fst \
+          -t pW85-1073.ab1 \
+          -p 0 \
+          -c 0.05  \
+          > pW85.snp
+
+
+  ## ============
+  ## fichier SNP
+  ## ============
+  #
+  # prend la première ligne de l'en tête des sorties de polySNP
+  # remplace les espaces par des .
+  # prend la sortie de polysnp,
+  # supprime les lignes vides,
+  # ajoute un champ ,snp
+  # remplace les virgule espace par des espaces
+  # sortie dans un fichier csv.
+  { ( head -n 1 ../header.csv | sed 's/ /\./g' ) ; \
+    ( sed '/^$/d;s/$/,snp/;s/,\ / /g' pW85.snp ) } | cat > pW85.snp.csv
+
+  ## ============
+  ## fichier PHD
+  ## ============
+  #
+  # prend l'en-tête de phd,
+  # prend la sortie de phd,
+  # ne garde que les lignes entre begin_dna et end_dna, non incluses,
+  # remplace les ` ` par des `,`
+  # sortie dans un fichier csv.
+  { ( head -n 1 header-phd.csv ) ; \
+    ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' pW85-1073.ab1.phd.1 | \
+        sed 's/ /,/g' ) } | cat > pW85.phd.csv
+
+  ## ============
+  ## fichier POLY
+  ## ============
+  #
+  # prend la sortie poly de phd,
+  # ne prend que la dernière ligne,
+  # remplace les doubles espaces par des ,
+  # ajoute un champ poly
+  # sortie dans le fichier poly.
+  { ( head -n 1 header-poly.csv ) ; \
+    ( tail -n +2 pW85-1073.ab1.poly | sed 's/  /,/g;s/$/,poly/' ) \
+  } | cat > pW85.poly.csv
+#+END_SRC
+
 * Makefile 
+#+BEGIN_SRC makefile :tangle ./Makefile
+## analyses hétérozygotes
+analysis/snp_distribution.pdf: scripts/polysnip.R
+	Rscript $<
 
-#+BEGIN_SRC make :tangle ./Makefile
-  #!/bin/bash
+analysis/switch_distrib.pdf: scripts/polysnip.R
+	Rscript $<
 
-  cd ~/stage/seq_novembre/scripts
+analysis/mutant-count.pdf: scripts/polysnip.R
+	Rscript $<
 
-  chmod +x *.sh
+analysis/mutant-second.pdf: scripts/polysnip.R
+	Rscript $<
 
-  ./extract_raw_data.sh                          # extrait les données des .zip et
-                                                 # organise en sous fichiers
+scripts/polysnip.R: scripts/polysniper.sh				\
+	scripts/polysniper-strong.sh									\
+	scripts/polysniper-weak.sh
+	bash $<
 
-  ./ab1_to_fastq.sh                              # extrait les fastq et fasta
-                                                 # depuis les .ab1
+scripts/polysniper.sh: scripts/extract_raw_data.sh
+	bash $<
 
-  ./trim_low_quality.sh                          # supprime les données de faible
-                                                 # qualité et transforme les bases
-                                                 # de qualité inférieure à 28 en N
 
-  ./quality_check.sh                             # analyse fastqc, crée les
-                                                 # graphes en png et sortie des
-                                                 # html dans le dossier analysis
 
-  ./variantCallerSsaha2.sh                       # détermine la position des SNP
-                                                 # basé sur la référence
+## analyses des variants
+analysis/qualite_distrib.pdf: scripts/variant_analysis.R
+	Rscript $<
 
-  python make_id_table.py > ../data/id_table.dat # crée la table d'association des
-                                                 # identifiants de séquence avec
-                                                 # le nom des clones
+analysis/bgc_en_action.pdf: scripts/variant_analysis.R
+	Rscript $<
 
-  Rscript variant_analysis.R                     # analyses et graphiques 
+analysis/candidats_heterozygotes.pdf: scripts/variant_analysis.R
+	Rscript $<
+
+analysis/inside_conv.tex: scripts/variant_analysis.R
+	Rscript $<
+
+analysis/mutant_snp_distribution.pdf: scripts/variant_analysis.R
+	Rscript $<
+
+analysis/per_base_quality_fastqc_trimmed.png: scripts/
+
+analysis/per_base_quality_fastqc_untrimmed.png: scripts/
+
 #+END_SRC
 
 * Commentaires
