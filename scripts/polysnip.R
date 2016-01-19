@@ -1,95 +1,123 @@
-setwd("~/stage/seq_novembre/data/snp-calling")
-
-library(dplyr)
-library(ggplot2)
-
-read_polysnp <- function(filename)
-{
-  read.csv(filename, stringsAsFactors = FALSE) %>%
-    tbl_df() %>%
-    select(
-      -datum,
-      -analysis,
-      -corrected.proportion.A,
-      -corrected.proportion.B,
-      name   = file,
-      refpos = reference.position,
-      qpos   = SCF.position,
-      wt     = A.base,
-      snp    = B.base,
-      first  = first.call,
-      second = second.call,
-      uncorA = uncorrected.proportion.A,
-      uncorB = uncorrected.proportion.B,
-      farea  = first.area,
-      sarea  = second.area
-    ) %>%
-    mutate(name = gsub("-1073.ab1", "", x = name),
-           comments = factor(comments))
-}
-
-## combine les données en une table unique, ajoute l'info du type de mutant.
-## TODO corriger les mutants dans la mauvaise catégorie.
-snp <- rbind(
-  read_polysnp("weak.csv") %>% mutate(mutant = "weak") %>% tbl_df(),
-  read_polysnp("strong.csv") %>% mutate(mutant = "strong") %>% tbl_df()
-)
-
-## réaffecte les niveaux de facteur.
-##
-## +---------+-------------------------------------------------------+
-## | facteur | commentaire                                           |
-## |---------+-------------------------------------------------------|
-## | D       | WARNING: bases could not be matched                   |
-## | C       | WARNING: multiple peak span, data are not trustworthy |
-## | B       | WARNING: primary peak does not match the reference    |
-## | A       | processed normally                                    |
-## +---------+-------------------------------------------------------+
-
-## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
-## facteur. sensible aux variations de paramètre polySNP à mon avis. à
-## surveiller.
-snp$comments <- plyr::mapvalues(snp$comments,
-                                from = levels(snp$comments),
-                                to = c("D", "A", "B"))
-
-## correct NA symbol
-snp$second[snp$second == "-"] <- NA
-
-## corrige les erreurs de SNP.
-snp$mutant[snp$name == "pS60"] <- "weak"
-snp$mutant[snp$name == "pS83"] <- "weak"
-snp$mutant[snp$name == "pS92"] <- "weak"
-snp$mutant[snp$name == "pS91"] <- "weak"
-snp$mutant[snp$name == "pW6" ] <- "strong"
-
-library(ggplot2)
-theme_set(theme_gray(base_size = 9, base_family = "Courier"))
-
 snp %>%
-  group_by(comments) %>%
-  summarise(count = n())
-
-snp %>%
-  filter(comments == "B") %>%
+  filter(!is.na(second)) %>%
   ggplot(aes(x = refpos, fill = mutant)) +
   geom_histogram(binwidth = 10) +
-  facet_grid(mutant~.)
-
-snp %>%
-  filter(!is.na(second)) #%>%
-  ggplot(aes(x = refpos, fill = mutant)) +
-  geom_histogram(binwidth = 1) +
-  facet_grid(mutant~.)
+    facet_grid(mutant~.) +
+    scale_fill_discrete(guide = FALSE) +
+    xlab("Position sur la sequence de reference") + 
+    ylab("")
+ggsave("../../analysis/mutant-count.pdf")
 
 snp %>%
   filter(!is.na(second)) %>%
+  filter(comments == "A") %>%
   group_by(refpos, mutant, second) %>%
   summarise(count =n()) %>%
   ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
   geom_point() +
   geom_bar(stat = "identity", alpha = 0.2) +
+  facet_grid(mutant~second) +
   xlab("Position sur la sequence de reference") +
-  ylab("Nombre de sequence montrant un pic secondaire") +
+  ylab("Nombre de sequence") +
   scale_fill_discrete(guide = FALSE) +
-  scale_colour_discrete(guide = FALSE)
+  scale_colour_discrete(guide = FALSE) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = 1, colour = "white"))
+ggsave("../../analysis/mutant-second.pdf")
+
+snp %>%
+  filter(!is.na(second)) %>%
+  filter(comments == "A") %>%
+  filter(ratioA > 0.2) %>%
+  group_by(refpos, mutant, second) %>%
+  summarise(count =n()) %>%
+  ggplot(aes(x = refpos, y = count, color = second, fill = second)) +
+  geom_point() +
+  geom_bar(stat = "identity", alpha = 0.2) +
+  facet_grid(mutant~second) +
+  xlab("Position sur la sequence de reference") +
+  ylab("Nombre de sequence") +
+  scale_fill_discrete(guide = FALSE) +
+  scale_colour_discrete(guide = FALSE) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = 1, colour = "white"))
+ggsave("../../analysis/mutant-second-filter.pdf")
+
+snp %>%
+  rowwise() %>%
+  filter(first == snp) %>%
+  ungroup() %>%
+  group_by(name, mutant) %>%
+  summarise(debut = min(refpos), fin = max(refpos), longueur = fin - debut) %>%
+  ggplot(aes(x = longueur, fill = mutant)) +
+  geom_histogram(binwidth = 10) +
+  facet_grid(mutant~.) +
+  theme_minimal(base_family = "Courier") +
+  theme(panel.ontop = TRUE,
+        panel.grid.major.y = element_line(size = 1, color = "white"),
+        panel.grid.minor.y = element_line(size = 0.5, color = "white")) +
+  xlab("Distribution de la longueur de la tract de conversion") +
+  ylab("")
+
+snp %>%
+  group_by(name) %>%
+  summarise(max = max(qpos)) %>%
+  qplot(data =., max, binwidth = 1) +
+  xlab("Distribution de la longueur des séquences")
+
+mergeiupac <- function(first, second)
+{
+  if(is.na(second)) { Biostrings::mergeIUPACLetters(paste0(first, "" )) }
+  else { Biostrings::mergeIUPACLetters(paste0(first, second)) }
+}
+
+snp %>%
+  filter(comments == "A") %>%
+  rowwise() %>%
+  mutate(type = mergeiupac(first, second)) %>%
+  select(name, type) %>% 
+  ungroup() -> seqlist 
+
+lapply(
+  split(seqlist, seqlist$name), # split by name
+  function(x) { 
+    paste0( 
+      ">", x$name[1], "\n", # copie le nom de la sequence avec le fasta sep
+      gsub(x = toString(x$type), # et la sequence iupac
+           pattern = ", ",
+           replace = "" ))
+  }
+) %>%
+  unlist() ->
+  seqlist
+
+
+## 1. concatenate sequence
+## 2. prepend sequence name.
+
+snp %>%
+  select(wt, refpos) %>%
+  arrange(refpos) %>%
+  unique() %>%
+  {
+    toString(.$wt) %>% gsub(x = ., pattern = ", ", replace = "")
+  } %>%
+  paste0(">wt", "\n", .) ->
+  refsnp
+
+cat(c(refsnp, seqlist), sep = "\n",
+    file = "iupac_seqlist.fasta")
+
+snp %>% filter(qpos == "457")
+
+snp %>%
+  rowwise() %>%
+  filter(first != snp & first != wt) %>%
+  qplot(data = ., refpos, geom = "histogram")
+
+  select(first) %>%
+  {
+    as.factor(.$first) %>% levels()
+  }

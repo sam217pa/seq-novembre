@@ -1156,8 +1156,8 @@ les lignes vides. (temps d'exécution approximatif : 2min.)
 #+END_SRC
 ** Analyses 
 *** Boilerplate
-#+BEGIN_SRC R :tangle scripts/polysnip.R
-  setwd("~/stage/seq_novembre/data/snp-calling")
+#+BEGIN_SRC R :tangle scripts/polysnip-read.R
+  setwd("./data/snp-calling")
   library(dplyr)
   library(ggplot2)
   library(viridis)
@@ -1179,7 +1179,7 @@ un facteur à quatre niveaux.
 | B       | WARNING: primary peak does not match the reference    |
 | A       | processed normally                                    |
 
-#+BEGIN_SRC R :tangle scripts/polysnip.R
+#+BEGIN_SRC R :tangle scripts/polysnip-read.R
   read_polysnp <- function(filename)
   {
     read.csv(filename, stringsAsFactors = FALSE) %>%
@@ -1381,55 +1381,65 @@ un facteur à quatre niveaux.
       as.factor(.$first) %>% levels()
     }
 #+END_SRC
-*** read phd files
-Dans le dossier snp-calling, pour chaque fichier contenant l'extension ~.poly~,
-prendre la dernière ligne, remplacer tous les doubles espaces par des commas,
-ajouter ~weak~ dans la dernière colonne, et sortir dans le dossier ~csv~.
+** Analyses de la répartition des sites polymorphes sur les reads
+Les graphes précédents semblent montrer que les sites polymorphes sont plus
+nombreux chez les weak que chez les strongs. 
 
-#+BEGIN_SRC sh
-  #!/bin/bash
+On veut voir la responsabilité relative des clones dans le compteur de site
+polymorphe. Certains clones pourraient avoir beaucoup de sites polymorphes,
+d'autres peu. Ou alors la distribution des sites polymorphes est assez équitable
+entre les reads. 
 
-  cd ~/stage/seq_novembre/data/snp-calling/
+#+BEGIN_SRC R :tangle scripts/polysnip-repartition-site.R
+  source("scripts/polysnip-read.R")
 
-  for file in ./weak/*.poly
-  do
-      tail -n +1 $file | \
-          sed 's/  /,/g;s/$/,weak/' > ./csv/`basename $file`.csv
-  done
+  snp %>%
+    filter(!is.na(second)) %>%
+    ## rowwise() %>%
+    ## filter(first == snp) %>%
+    ## ungroup() %>%
+    group_by(name, mutant) %>%
+    summarise(count = n()) %>%
+    filter(count > 10)
 
 
-  for file in ./strong/*.poly
-  do
-      tail -n +1 $file | \
-          sed 's/  /,/g;s/$/,strong/' > ./csv/`basename $file`.csv
-  done
+    ggplot(aes(x = count)) +
+    geom_histogram(binwidth = 1) +
+    facet_grid(mutant~.)
+
+  snp %>%
+    filter(name == "pS96")
 #+END_SRC
 
-Un exemple de script utilisant /muscle/ en ligne de commande.  
-#+BEGIN_SRC sh
-  #!/bin/bash
+Une liste de sequence avec beaucoup de polymorphismes SNP par reads :
+ 
+| name  | mutant | count |
+| (chr) | (chr)  | (int) |
+|-------+--------+-------|
+| pS96  | strong |    15 |
+| pW29  | weak   |    14 |
+| pW35  | weak   |    17 |
+| pW5   | weak   |    15 |
+| pW68  | weak   |    15 |
+| pW69  | weak   |    21 |
+| pW83  | weak   |    15 |
 
-  cd ~/stage/seq_novembre/data/snp-calling/strong
+** Distribution des ratios par read
+#+BEGIN_SRC R :tangle scripts/polysnip-repartition-site.R
 
-  muscle \
-      -profile \
-      -objscore ps \
-      -maxmb 50 \
-      -in1 aln-strong-wt.fst \
-      -in2 pS1-1073.ab1.seq \
-      -out test.muscle
-#+END_SRC
-
-#+BEGIN_SRC R
-  setwd("~/stage/seq_novembre/data/snp-calling")
-
-  library(readr)
-  test.poly <- read_csv
-
-  test.poly
 #+END_SRC
 
 ** Comparaison du polymorphisme SNP / ΦSNP
+Les graphes précédents semblent montrer que les positions polymorphes sont
+plus nombreuses dans les constructions weak que dans les constructions strong. 
+L'idée suivante est de tester la différence entre le nombre de sites polymorphes
+spécifiques aux SNP qu'on introduit et le nombre de sites polymorphes aux sites
+non-snp. 
+
+Je veux essayer de reproduire l'algorithme de polySNP, de façon à pouvoir
+obtenir dans un seul tableau de donnée tous les sites polymorphes, qu'ils
+soient SNP ou non, de façon à pouvoir comparer leur distribution.  
+
 
 #+BEGIN_SRC sh
   # copie les alignments

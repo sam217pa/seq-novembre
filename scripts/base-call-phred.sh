@@ -14,7 +14,7 @@ phred \
     ## emplacement des fichiers
     -id ./spectrograms \
     ## trim les bases à gauche et droite en fonction de la qualité
-    -trim_alt \
+    -trim_alt "" \
     ## selon la probabilité d'erreur suivante.
     -trim_cutoff 0.05 \
     ## écrit les séquences trimmées dans un fichier phred

@@ -2,10 +2,11 @@
 
 ####
 #### POLYSNP
+####
 ###
-### le script qui effectue le base-calling via phred, qui détermine les
+### Ce script qui effectue le base-calling via phred, détermine les
 ### positions de SNP qui sont aux positions attendues d'après les alignements de
-### référence, et qui détermine pour chaque position attendue les deux bases
+### référence, et détermine pour chaque position attendue les deux bases
 ### appelées à chaque pic.
 
 cd ~/stage/seq_novembre/data/snp-calling/weak

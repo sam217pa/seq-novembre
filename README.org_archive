@@ -243,3 +243,58 @@ traceMatrix(pW85) %>%
   gather(trace, value, V1:V4) -> tracematrix
 #+END_SRC
 
+
+* read phd files
+:PROPERTIES:
+:ARCHIVE_TIME: 2016-01-19 Tue 18:41
+:ARCHIVE_FILE: ~/stage/seq_novembre/README.org
+:ARCHIVE_OLPATH: Analyse des positions hétérozygotes/Analyses
+:ARCHIVE_CATEGORY: STAGE
+:END:
+Dans le dossier snp-calling, pour chaque fichier contenant l'extension ~.poly~,
+prendre la dernière ligne, remplacer tous les doubles espaces par des commas,
+ajouter ~weak~ dans la dernière colonne, et sortir dans le dossier ~csv~.
+
+#+BEGIN_SRC sh
+  #!/bin/bash
+
+  cd ~/stage/seq_novembre/data/snp-calling/
+
+  for file in ./weak/*.poly
+  do
+      tail -n +1 $file | \
+          sed 's/  /,/g;s/$/,weak/' > ./csv/`basename $file`.csv
+  done
+
+
+  for file in ./strong/*.poly
+  do
+      tail -n +1 $file | \
+          sed 's/  /,/g;s/$/,strong/' > ./csv/`basename $file`.csv
+  done
+#+END_SRC
+
+Un exemple de script utilisant /muscle/ en ligne de commande.  
+#+BEGIN_SRC sh
+  #!/bin/bash
+
+  cd ~/stage/seq_novembre/data/snp-calling/strong
+
+  muscle \
+      -profile \
+      -objscore ps \
+      -maxmb 50 \
+      -in1 aln-strong-wt.fst \
+      -in2 pS1-1073.ab1.seq \
+      -out test.muscle
+#+END_SRC
+
+#+BEGIN_SRC R
+  setwd("~/stage/seq_novembre/data/snp-calling")
+
+  library(readr)
+  test.poly <- read_csv
+
+  test.poly
+#+END_SRC
+
