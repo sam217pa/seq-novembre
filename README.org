@@ -2,8 +2,6 @@
 
 #+CATEGORY: STAGE
 
-# #+TOC: headlines 1
-
 #+begin_src emacs-lisp :results none :export none
   (org-babel-tangle-file "README.org")
 #+end_src
@@ -1495,6 +1493,45 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   } | cat > pW85.poly.csv
 #+END_SRC
 
+Le script suivant permet d'analyser les premières données obtenues avec pW85,
+dans R. 
+
+Le fichier =phd= garde la trace de la position (dans le champ /position/) dans
+le chromatogramme, avec un système de coordonnées qui doit -- certainement --
+correspondre au nombre de point dans le chromatogramme. Dans ce fichier, il y a
+une ligne par position (/ie/ par base) gardée dans la séquence trimmée. On
+appelle donc cette position /SCF.position/.
+
+Cette position permet de joindre le fichier =phd= avec le fichier =snp= (la
+sortie de polysnp), /via/ le champ /SCF.position/, puis avec le fichier =poly=,
+le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
+/position/. 
+
+TODO Rajouter un champ fichier dans tous les fichiers qui permette de savoir
+d'où viennent les séquences, autrement que dans le fichier =snp=. 
+
+#+BEGIN_SRC R
+  setwd("./data/snp-calling")
+
+  library(dplyr)
+
+  snp <- readr::read_csv("tmp/pW85.snp.csv")
+  phd <- readr::read_csv("tmp/pW85.phd.csv")
+  poly <- readr::read_csv("tmp/pW85.poly.csv")
+
+  ## left_join(x = poly, y = snp, by = c("area" = "first.area", "type" = "type"))
+
+  phd$SCF.position <- as.integer(rownames(phd))
+  ## phd
+
+  poly
+
+  left_join(x = phd, y = snp) %>%
+  left_join(x = .,   y = poly) -> test
+
+  test
+
+#+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
 ## analyses hétérozygotes
