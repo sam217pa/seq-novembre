@@ -1546,12 +1546,12 @@ Les graphes précédents semblent montrer que les positions polymorphes sont
 plus nombreuses dans les constructions weak que dans les constructions strong. 
 L'idée suivante est de tester la différence entre le nombre de sites polymorphes
 spécifiques aux SNP qu'on introduit et le nombre de sites polymorphes aux sites
-non-snp. 
+non-snp. Le but est de déterminer si les polymorphismes qu'on voit sont
+spécifiques des SNP. 
 
 Je veux essayer de reproduire l'algorithme de polySNP, de façon à pouvoir
 obtenir dans un seul tableau de donnée tous les sites polymorphes, qu'ils
 soient SNP ou non, de façon à pouvoir comparer leur distribution.  
-
 
 #+BEGIN_SRC sh
   # copie les alignments
@@ -1578,7 +1578,8 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   # remplace les virgule espace par des espaces
   # sortie dans un fichier csv.
   { ( head -n 1 ../header.csv | sed 's/ /\./g' ) ; \
-    ( sed '/^$/d;s/$/,snp/;s/,\ / /g' pW85.snp ) } | cat > pW85.snp.csv
+    ( sed '/^$/d;s/$/,snp/;s/,\ / /g' pW85.snp ) \
+  } | cat > pW85.snp.csv
 
   ## ============
   ## fichier PHD
@@ -1591,7 +1592,8 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   # sortie dans un fichier csv.
   { ( head -n 1 header-phd.csv ) ; \
     ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' pW85-1073.ab1.phd.1 | \
-        sed 's/ /,/g' ) } | cat > pW85.phd.csv
+            sed 's/ /,/g' ) \
+  } | cat > pW85.phd.csv
 
   ## ============
   ## fichier POLY
@@ -1601,10 +1603,26 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   # ne prend que la dernière ligne,
   # remplace les doubles espaces par des ,
   # ajoute un champ poly
+  # compte la position dans la séquence (ie nombre de ligne dans le fichier)
   # sortie dans le fichier poly.
   { ( head -n 1 header-poly.csv ) ; \
-    ( tail -n +2 pW85-1073.ab1.poly | sed 's/  /,/g;s/$/,poly/' ) \
+    ( tail -n +2 pW85-1073.ab1.poly | sed 's/  /,/g;s/$/,poly/' | awk '$0=1+i++","$0' ) \
   } | cat > pW85.poly.csv
+
+  ## ============
+  ##   POOLING
+  ## ============
+  # join les fichiers phd et poly sur la base de la position dans le
+  # spectrogramme. join les fichiers obtenus sur la base de la position dans la
+  # séquence du tracefile.
+  # sortie 
+  csvjoin -c "position,positionCalledBase" --left pW85.phd.csv pW85.poly.csv | \
+      csvjoin -c "SCF.position, refpos" --left - pW85.snp.csv > $filename.csv
+
+
+  ,#+END_FOR_LOOP
+
+  # csvstack *.csv
 #+END_SRC
 
 Le script suivant permet d'analyser les premières données obtenues avec pW85,
@@ -1628,6 +1646,8 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
   setwd("./data/snp-calling")
 
   library(dplyr)
+  library(ggplot2)
+  library(viridis)
 
   snp <- readr::read_csv("tmp/pW85.snp.csv")
   phd <- readr::read_csv("tmp/pW85.phd.csv")
@@ -1638,11 +1658,75 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
   phd$SCF.position <- as.integer(rownames(phd))
   ## phd
 
-  left_join(phd, poly) %>% left_join(snp) -> test
+  left_join(phd, poly) %>%
+    left_join(snp, by = "SCF.position") ->
+    snp
 
-  test %>%
-  qplot(data = ., x = SCF.position, y = 1, label = uncalledBase, geom = "raster", fill = uncalledBase) +
-  scale_fill_viridis(discrete = TRUE)
+  snp %>%
+    select(
+      base = toupper(baseCall),
+      qual = quality,
+      rpos = position,
+      qpos = SCF.position,
+      air1 = area,
+      rel1 = relativeAreaCalledPeak,
+      ubas = uncalledBase,
+      upos = positionUncalledBase,
+      uair = areaUncalledBase,
+      rel2 = relativeAreaUncalledBase,
+      A    = A,
+      C    = C,
+      G    = G,
+      T    = T,
+      type = type.x,
+      file = file,
+      anls = analysis,
+      datm = datum,
+      comt = comments,
+      recv = A.base,
+      donn = B.base,
+      fcal = first.call,
+      fara = first.area,
+      scal = second.call,
+      sara = second.area,
+      rat1 = uncorrected.proportion.A,
+      rat2 = uncorrected.proportion.B,
+      snp_ = type.y
+    ) ->
+  snp
+
+  ## snp %>%
+  ##   filter(uncalledBase != "N") %>%
+  ##   rowwise() %>%
+  ##   filter(uncalledBase == second.call) %>%
+  ##   group_by(file) %>%
+  ##   summarise(count = n()) 
+  ### cette approche ne fonctionne pas. les positions SCF ne sont à priori pas les
+  ### mêmes, selon qu'on considère le fichier phd ou le fichier snp. ça me fait
+  ### chier. beaucoup.
+
+  ### TODO relire polySNP
+
+  snp %>%
+    filter(!is.na(file)) %>%
+    rowwise() %>%
+    ## filter(ubas != "N") %>%
+    filter(scal != ubas) %>%
+    {
+      .$qpos
+    } ->
+    snp_pos
+
+  snp %>%
+    filter(ubas != "N") %>%
+    ggplot(data = .,
+           aes(x = qpos, y = 1, label = ubas, color = ubas,
+               fill = ubas)) +
+    geom_text() +
+    ## geom_tile(alpha = 0.5) +
+    geom_vline( xintercept = snp_pos)
+
+
 #+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
