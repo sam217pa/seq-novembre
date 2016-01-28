@@ -1727,6 +1727,41 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
     geom_vline( xintercept = snp_pos)
 
 
+  data <- readr::read_csv("tmp/join.csv") 
+
+  data %>%
+    select(
+      base = baseCall,
+      qual = quality,
+      rpos = position,
+      qpos = SCF.position,
+      air1 = area,
+      rel1 = relativeAreaCalledPeak,
+      ubas = uncalledBase,
+      upos = positionUncalledBase,
+      uair = areaUncalledBase,
+      rel2 = relativeAreaUncalledBase,
+      A    = A,
+      C    = C,
+      G    = G,
+      T    = T,
+      ## type = type.x,
+      file = file,
+      anls = analysis,
+      datm = datum,
+      comt = comments,
+      recv = A.base,
+      donn = B.base,
+      fcal = first.call,
+      fara = first.area,
+      scal = second.call,
+      sara = second.area,
+      rat1 = uncorrected.proportion.A,
+      rat2 = uncorrected.proportion.B,
+      snp_
+    ) %>%
+    mutate(base = toupper(base)) ->
+    data
 #+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
