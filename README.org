@@ -1560,6 +1560,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
 
   ## copie l'alignement référence dans .
   cp ../../ref/aln-strong-wt.fst .
+  cp ../../ref/aln-weak-wt.fst .
 
   for spectro in ../../spectrograms/pS*.ab1
   do
@@ -1601,7 +1602,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
       { ( head -n 1 ../header-phd.csv ) ; \
         ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' \
               `basename $spectro`.phd.1 | \
-                sed -e "s/ /,/g;s/$/strong,`basename $spectro`/" ) \
+                sed -e "s/ /,/g;s/$/,strong,`basename $spectro`/" ) \
       } | cat > `basename $spectro`.phd.csv
 
       ## ============
@@ -1635,11 +1636,9 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
                   - `basename $spectro`.snp.csv > `basename $spectro`.csv
   done
 
-
-  cd ../data/snp-calling/weak
-
-  ## copie l'alignement référence dans .
-  cp ../../ref/aln-weak-wt.fst .
+  ## ================================================================================
+  ##                                       WEAK
+  ## ================================================================================
 
   for spectro in ../../spectrograms/pW*.ab1
   do
@@ -1681,7 +1680,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
       { ( head -n 1 ../header-phd.csv ) ; \
         ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' \
               `basename $spectro`.phd.1 | \
-                sed -e "s/ /,/g;s/$/weak,`basename $spectro`/" ) \
+                sed -e "s/ /,/g;s/$/,weak,`basename $spectro`/" ) \
       } | cat > `basename $spectro`.phd.csv
 
       ## ============
@@ -1719,8 +1718,10 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
 #+BEGIN_SRC sh
   cd ./data/snp-calling/
 
-  csvstack ./strong/*.ab1.csv > huge-strong.csv
+  csvstack ./strong/*.ab1.csv > snp.csv
+  # csvstack ./strong/*.ab1.csv > huge-strong.csv
 #+END_SRC
+
 Le script suivant permet d'analyser les premières données obtenues avec pW85,
 dans R. 
 
@@ -1823,13 +1824,14 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
     geom_vline( xintercept = snp_pos)
 
 
-  data <- readr::read_csv("tmp/join.csv") 
+  # 10'' environ
+  data <- read.csv("huge-strong.csv") %>% tbl_df()
 
   data %>%
     select(
       base = baseCall,
       qual = quality,
-      rpos = position,
+      spos = position,
       qpos = SCF.position,
       air1 = area,
       rel1 = relativeAreaCalledPeak,
@@ -1854,10 +1856,30 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
       sara = second.area,
       rat1 = uncorrected.proportion.A,
       rat2 = uncorrected.proportion.B,
+      plas = plasmide,
+      mutt = mutant,
       snp_
     ) %>%
     mutate(base = toupper(base)) ->
     data
+
+  glimpse(data)
+  data %>%
+    ## filter(ubas != "N") %>%
+    group_by(snp_) %>%
+    summarise(count = n()) 
+
+  data %>%
+    filter(ubas != "N") %>%
+    group_by(mutt) %>%
+    summarise(count = n()) 
+
+  data %>%
+    filter(snp_== "snp") %>%
+    rowwise() %>%
+    filter(as.character(scal) == as.character(ubas))
+
+  # TODO trouver un moyen de dire à readr::read_csv() le type des colonnes. 
 #+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
