@@ -1718,8 +1718,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
 #+BEGIN_SRC sh
   cd ./data/snp-calling/
 
-  csvstack ./strong/*.ab1.csv > snp.csv
-  # csvstack ./strong/*.ab1.csv > huge-strong.csv
+  csvstack ./strong/*.ab1.csv > huge-strong.csv
 #+END_SRC
 
 Le script suivant permet d'analyser les premières données obtenues avec pW85,
@@ -1736,15 +1735,13 @@ sortie de polysnp), /via/ le champ /SCF.position/, puis avec le fichier =poly=,
 le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
 /position/. 
 
-TODO Rajouter un champ fichier dans tous les fichiers qui permette de savoir
-d'où viennent les séquences, autrement que dans le fichier =snp=. 
-
 #+BEGIN_SRC R
   setwd("./data/snp-calling")
 
   library(dplyr)
   library(ggplot2)
   library(viridis)
+  library(readr)
 
   snp <- readr::read_csv("tmp/pW85.snp.csv")
   phd <- readr::read_csv("tmp/pW85.phd.csv")
@@ -1769,7 +1766,7 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
       rel1 = relativeAreaCalledPeak,
       ubas = uncalledBase,
       upos = positionUncalledBase,
-      uair = areaUncalledBase,
+      air2 = areaUncalledBase,
       rel2 = relativeAreaUncalledBase,
       A    = A,
       C    = C,
@@ -1788,19 +1785,9 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
       sara = second.area,
       rat1 = uncorrected.proportion.A,
       rat2 = uncorrected.proportion.B,
-      snp_ = type.y
+      snp = type.y
     ) ->
   snp
-
-  ## snp %>%
-  ##   filter(uncalledBase != "N") %>%
-  ##   rowwise() %>%
-  ##   filter(uncalledBase == second.call) %>%
-  ##   group_by(file) %>%
-  ##   summarise(count = n()) 
-  ### cette approche ne fonctionne pas. les positions SCF ne sont à priori pas les
-  ### mêmes, selon qu'on considère le fichier phd ou le fichier snp. ça me fait
-  ### chier. beaucoup.
 
   ### TODO relire polySNP
 
@@ -1812,7 +1799,7 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
     {
       .$qpos
     } ->
-    snp_pos
+    snppos
 
   snp %>%
     filter(ubas != "N") %>%
@@ -1821,52 +1808,89 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
                fill = ubas)) +
     geom_text() +
     ## geom_tile(alpha = 0.5) +
-    geom_vline( xintercept = snp_pos)
+    geom_vline( xintercept = snppos)
 
+
+  col_adn <- function() col_factor(c("a", "t", "c", "g", "n"))
+  col_ADN <- function() col_factor(c("A", "T", "C", "G", "N"))
 
   # 10'' environ
-  data <- read.csv("huge-strong.csv") %>% tbl_df()
-
-  data %>%
+  data <- readr::read_csv(
+    "huge-strong.csv",
+    col_types = cols(
+      baseCall     = col_adn(),
+      calledBase   = col_ADN(),
+      uncalledBase = col_ADN(),
+      ## areaUncalledBase = col_double(na = c("-1")),
+      mutant       = col_factor(c("strong", "weak")),
+      A.base       = col_ADN(),
+      B.base       = col_ADN(),
+      first.call   = col_ADN(),
+      second.call  = col_ADN(),
+      second.area  = col_double(),
+      snp_         = col_factor(c("snp"))),
+    na = c("-", "", "-1")) %>%
     select(
-      base = baseCall,
-      qual = quality,
-      spos = position,
-      qpos = SCF.position,
-      air1 = area,
-      rel1 = relativeAreaCalledPeak,
-      ubas = uncalledBase,
-      upos = positionUncalledBase,
-      uair = areaUncalledBase,
+      plas = plasmide, # nom de la construction
+      mutt = mutant, # weak ou strong
+      base = baseCall, # 
+      ubas = uncalledBase, # base non appelée
+      fcal = first.call,
+      scal = second.call,
+      qpos = SCF.position, # position sur la séquence
+      recv = A.base,
+      donn = B.base,
+      air1 = area, # aire du pic primaire
+      air2 = areaUncalledBase,
+      rel1 = relativeAreaCalledPeak, # 
       rel2 = relativeAreaUncalledBase,
+      ## upos = positionUncalledBase, # position de la base non appelée sur le spectrogramme 
+      ## rel2 = parse_double(relativeAreaUncalledBase, na = c("-1", NA)),
+      ## file = file,
+      ## anls = analysis,
+      ## datm = datum,
+      ## fara = first.area,
+      ## sara = second.area,
+      rat1 = uncorrected.proportion.A,
+      ## rat2 = uncorrected.proportion.B,
+      snp  = snp_,
+      qual = quality,
+      comt = comments,
+      spos = position, # position sur le spectrogramme
       A    = A,
       C    = C,
       G    = G,
-      T    = T,
-      ## type = type.x,
-      file = file,
-      anls = analysis,
-      datm = datum,
-      comt = comments,
-      recv = A.base,
-      donn = B.base,
-      fcal = first.call,
-      fara = first.area,
-      scal = second.call,
-      sara = second.area,
-      rat1 = uncorrected.proportion.A,
-      rat2 = uncorrected.proportion.B,
-      plas = plasmide,
-      mutt = mutant,
-      snp_
+      T    = T
     ) %>%
-    mutate(base = toupper(base)) ->
-    data
+    mutate(base = toupper(base),
+           plas = gsub("-1073.ab1", "", plas),
+           rel2 = parse_double(.$rel2, na = c("-1")),
+           air2 = parse_double(.$air2, na = c("-1")))
+
+  ## réaffecte les niveaux de facteur. 
+  ##
+  ## +---------+-------------------------------------------------------+
+  ## | facteur | commentaire                                           |
+  ## |---------+-------------------------------------------------------|
+  ## | D       | WARNING: bases could not be matched                   |
+  ## | C       | WARNING: multiple peak span, data are not trustworthy |
+  ## | B       | WARNING: primary peak does not match the reference    |
+  ## | A       | processed normally                                    |
+  ## +---------+-------------------------------------------------------+
+
+  ## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
+  ## facteur. sensible aux variations de paramètre polySNP à mon avis. à
+  ## surveiller.
+  data$comt <- factor(data$comt)
+  ## length(levels(data$comt))
+  data$comt <- plyr::mapvalues(data$comt,
+                               from = levels(data$comt),
+                               to = c("D", "B", "A"))
 
   glimpse(data)
   data %>%
     ## filter(ubas != "N") %>%
-    group_by(snp_) %>%
+    group_by(snp) %>%
     summarise(count = n()) 
 
   data %>%
@@ -1875,11 +1899,61 @@ d'où viennent les séquences, autrement que dans le fichier =snp=.
     summarise(count = n()) 
 
   data %>%
-    filter(snp_== "snp") %>%
+    filter(snp== "snp") %>%
     rowwise() %>%
     filter(as.character(scal) == as.character(ubas))
 
   # TODO trouver un moyen de dire à readr::read_csv() le type des colonnes. 
+
+  data %>%
+    group_by(comt) %>%
+    summarise(count = n()) 
+
+  data %>%
+  
+  parse_double(data$rel2, na = c("-1")) %>% head
+
+  data %>%
+    filter(ubas != "N") %>%
+    group_by(snp) %>%
+    summarise(count = n()) 
+
+
+  theme_set(
+    theme_minimal(base_size = 6, base_family = "Courier") +
+    theme(panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"),
+          panel.grid.minor.y = element_line(colour = "gray", linetype = "dotted"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank())
+  )
+
+
+  data %>%
+    filter(ubas != "N") %>%
+    ggplot(data = .,
+           aes(x = qpos, y = plas, fill = ubas, label = ubas)) +
+    geom_tile() 
+    ## geom_text() 
+
+
+  data %>%
+    filter(!is.na(snp)) %>%
+    rowwise() %>%
+    ## filter(ubas != "N") %>%
+    filter(scal != ubas) %>%
+    print()
+    {
+      .$qpos
+    } ->
+    snppos
+
+  data %>%
+    filter(!is.na(snp)) %>%
+    rowwise() %>%
+    filter(fcal != base) %>%
+    print()
+    group_by(mutt) %>%
+    summarise(count = n()) 
 #+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
