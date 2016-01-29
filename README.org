@@ -1566,7 +1566,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   do
       # `basename $spectro`=`basename $spectro`
       cp $spectro .
-      polySNP \
+      ../../../tools/polySNP/polySNP \
           -r aln-strong-wt.fst \
           -t `basename $spectro` \
           -p 0 \
@@ -1632,7 +1632,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
 
       csvjoin -c "position,positionCalledBase" --left \
               `basename $spectro`.phd.csv `basename $spectro`.poly.csv | \
-          csvjoin -c "SCF.position, qposition" --left \
+          csvjoin -c "position, sposition" --left \
                   - `basename $spectro`.snp.csv > `basename $spectro`.csv
   done
 
@@ -1644,7 +1644,7 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
   do
       # `basename $spectro`=`basename $spectro`
       cp $spectro .
-      polySNP \
+      ../../../tools/polySNP/polySNP \
           -r aln-weak-wt.fst \
           -t `basename $spectro` \
           -p 0 \
@@ -1710,10 +1710,13 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
 
       csvjoin -c "position,positionCalledBase" --left \
               `basename $spectro`.phd.csv `basename $spectro`.poly.csv | \
-          csvjoin -c "SCF.position, qposition" --left \
+          csvjoin -c "position, sposition" --left \
                   - `basename $spectro`.snp.csv > `basename $spectro`.csv
   done
 #+END_SRC
+
+CHAMPAAAAAAAAAAAAAAAAAAGNE ! J'ai réussi [2016-01-29 Fri] ! Il suffisait de
+modifier deux lignes de commandes dans le script polySNP.
 
 #+BEGIN_SRC sh
   cd ./data/snp-calling/
@@ -1735,6 +1738,7 @@ sortie de polysnp), /via/ le champ /SCF.position/, puis avec le fichier =poly=,
 le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
 /position/. 
 
+Script préliminaire d'analyse du fichier pW85 seulement. 
 #+BEGIN_SRC R
   setwd("./data/snp-calling")
 
@@ -1742,12 +1746,6 @@ le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
   library(ggplot2)
   library(viridis)
   library(readr)
-
-  snp <- readr::read_csv("tmp/pW85.snp.csv")
-  phd <- readr::read_csv("tmp/pW85.phd.csv")
-  poly <- readr::read_csv("tmp/pW85.poly.csv")
-
-  ## left_join(x = poly, y = snp, by = c("area" = "first.area", "type" = "type"))
 
   phd$SCF.position <- as.integer(rownames(phd))
   ## phd
@@ -1788,28 +1786,28 @@ le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
       snp = type.y
     ) ->
   snp
+#+END_SRC
 
-  ### TODO relire polySNP
+On s'est rendu compte qu'il n'était pas possible de joindre le fichier polysnp
+obtenu avec le fichier phd sur la base de la position dans la séquence, puisque
+polysnp ne prend pas en compte la séquence trimmée, alors que le fichier POLY le
+prend en compte.
 
-  snp %>%
-    filter(!is.na(file)) %>%
-    rowwise() %>%
-    ## filter(ubas != "N") %>%
-    filter(scal != ubas) %>%
-    {
-      .$qpos
-    } ->
-    snppos
+Il faut donc changer l'origine du fichier polySNP, pour que la position sur la
+séquence reflète la position sur la séquence non trimmée, pas sur la séquence
+trimmée. 
 
-  snp %>%
-    filter(ubas != "N") %>%
-    ggplot(data = .,
-           aes(x = qpos, y = 1, label = ubas, color = ubas,
-               fill = ubas)) +
-    geom_text() +
-    ## geom_tile(alpha = 0.5) +
-    geom_vline( xintercept = snppos)
+On pense faire ça en utilisant la sortie de phred, qui permet de connaître la
+séquence trimmée. On peut alors calculer sa longueur, et l'ajouter à la colonne
+dans polySNP. 
 
+#+BEGIN_SRC R
+  setwd("./data/snp-calling")
+
+  library(dplyr)
+  library(ggplot2)
+  library(viridis)
+  library(readr)
 
   col_adn <- function() col_factor(c("a", "t", "c", "g", "n"))
   col_ADN <- function() col_factor(c("A", "T", "C", "G", "N"))
@@ -1844,6 +1842,7 @@ le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
       air2 = areaUncalledBase,
       rel1 = relativeAreaCalledPeak, # 
       rel2 = relativeAreaUncalledBase,
+      refp = reference.position, 
       ## upos = positionUncalledBase, # position de la base non appelée sur le spectrogramme 
       ## rel2 = parse_double(relativeAreaUncalledBase, na = c("-1", NA)),
       ## file = file,
@@ -1887,16 +1886,12 @@ le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
                                from = levels(data$comt),
                                to = c("D", "B", "A"))
 
-  glimpse(data)
-  data %>%
-    ## filter(ubas != "N") %>%
-    group_by(snp) %>%
-    summarise(count = n()) 
+  ## glimpse(data)
 
   data %>%
-    filter(ubas != "N") %>%
-    group_by(mutt) %>%
-    summarise(count = n()) 
+    filter(!is.na(fcal)) %>%
+    rowwise() %>%
+    filter(fcal != base) 
 
   data %>%
     filter(snp== "snp") %>%
@@ -1910,7 +1905,7 @@ le fichier qui recense les bases polymorphes (sortie de phred), /via/ le champ
     summarise(count = n()) 
 
   data %>%
-  
+
   parse_double(data$rel2, na = c("-1")) %>% head
 
   data %>%
