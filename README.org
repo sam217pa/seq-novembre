@@ -1055,10 +1055,10 @@ defaults to 0.10.
 #+END_QUOTE
 
 Étant donné la façon dont polySNP traite les chemins de fichiers, il faut que
-les fichiers en cours d'analyse soient dans le dossier courant.
+les fichiers en cours d'analyse soient dans le dossier courant. On les copie
+donc dans le dossier courant. Ça n'est pas très optimal, on pourrait tester avec
+des soft-links. 
 
-- [X] peut-être utiliser des softlinks, ou alors carrément copier les différents
-  documents dans un dossier de travail réservé.
 **** clones weak
 
 Le script suivant permet d'obtenir le tableau de résultat pour les clones weak.
@@ -1420,10 +1420,6 @@ Une liste de sequence avec beaucoup de polymorphismes SNP par reads :
 | pW83  | weak   |    15 |
 
 ** Distribution des ratios par read
-#+BEGIN_SRC R :tangle scripts/polysnip-repartition-site.R
-
-#+END_SRC
-
 ** Vérification des séquences alignées
 #+BEGIN_SRC R :tangle scripts/polysnip-repartition-site.R
   ## charge le dataset avec les snp, nettoie les données.
@@ -1713,16 +1709,13 @@ soient SNP ou non, de façon à pouvoir comparer leur distribution.
           csvjoin -c "position, sposition" --left \
                   - `basename $spectro`.snp.csv > `basename $spectro`.csv
   done
+  
+  cd ..
+  csvstack ./strong/*.ab1.csv > huge-strong.csv
 #+END_SRC
 
 CHAMPAAAAAAAAAAAAAAAAAAGNE ! J'ai réussi [2016-01-29 Fri] ! Il suffisait de
 modifier deux lignes de commandes dans le script polySNP.
-
-#+BEGIN_SRC sh
-  cd ./data/snp-calling/
-
-  csvstack ./strong/*.ab1.csv > huge-strong.csv
-#+END_SRC
 
 Le script suivant permet d'analyser les premières données obtenues avec pW85,
 dans R. 
@@ -1801,6 +1794,13 @@ On pense faire ça en utilisant la sortie de phred, qui permet de connaître la
 séquence trimmée. On peut alors calculer sa longueur, et l'ajouter à la colonne
 dans polySNP. 
 
+En fait j'ai modifié polySNP très légèrement, pour qu'il inclut dans sa sortie
+la position sur le spectrogramme, qu'il va chercher dans le fichier poly. C'est
+quand même bien plus simple comme ça. Du coup j'ajoute ma version de polySNP à
+github, même si j'ignore si j'en ai bien le droit… De toute façon le programme
+est sous licence GNU. J'ai fait les modifications nécessaires en accord (si j'ai
+bien lu) avec la GPL.
+
 #+BEGIN_SRC R
   setwd("./data/snp-calling")
 
@@ -1808,6 +1808,7 @@ dans polySNP.
   library(ggplot2)
   library(viridis)
   library(readr)
+  library(magrittr)
 
   col_adn <- function() col_factor(c("a", "t", "c", "g", "n"))
   col_ADN <- function() col_factor(c("A", "T", "C", "G", "N"))
@@ -1856,6 +1857,7 @@ dans polySNP.
       qual = quality,
       comt = comments,
       spos = position, # position sur le spectrogramme
+      ## spos1= sposition, # position sur le spectrogramme
       A    = A,
       C    = C,
       G    = G,
@@ -1865,7 +1867,6 @@ dans polySNP.
            plas = gsub("-1073.ab1", "", plas),
            rel2 = parse_double(.$rel2, na = c("-1")),
            air2 = parse_double(.$air2, na = c("-1")))
-
   ## réaffecte les niveaux de facteur. 
   ##
   ## +---------+-------------------------------------------------------+
@@ -1876,7 +1877,6 @@ dans polySNP.
   ## | B       | WARNING: primary peak does not match the reference    |
   ## | A       | processed normally                                    |
   ## +---------+-------------------------------------------------------+
-
   ## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
   ## facteur. sensible aux variations de paramètre polySNP à mon avis. à
   ## surveiller.
@@ -1885,70 +1885,154 @@ dans polySNP.
   data$comt <- plyr::mapvalues(data$comt,
                                from = levels(data$comt),
                                to = c("D", "B", "A"))
+  ## corrige les erreurs de SNP. 
+  data$mutt[data$plas == "pS60"] <- "weak"
+  data$mutt[data$plas == "pS83"] <- "weak"
+  data$mutt[data$plas == "pS92"] <- "weak"
+  data$mutt[data$plas == "pS91"] <- "weak"
+  data$mutt[data$plas == "pW6" ] <- "strong"
 
-  ## glimpse(data)
 
-  data %>%
-    filter(!is.na(fcal)) %>%
-    rowwise() %>%
-    filter(fcal != base) 
 
-  data %>%
-    filter(snp== "snp") %>%
-    rowwise() %>%
-    filter(as.character(scal) == as.character(ubas))
-
-  # TODO trouver un moyen de dire à readr::read_csv() le type des colonnes. 
-
-  data %>%
-    group_by(comt) %>%
-    summarise(count = n()) 
-
-  data %>%
-
-  parse_double(data$rel2, na = c("-1")) %>% head
+                                          # algo :
+  ## par plasmide,
+  ## trouve la première position alignée avec la référence
+  ## ajuste les positions avant celle là en fonction
+  ## ajuste les positions après en fonction. 
+  ##
+  ## stratégie : faire une table qui associe par position la position de référence
+  ## connue la plus proche, inner_join on it, calcul de la différence entre la
+  ## position de référence la plus proche et la position actuelle
 
   data %>%
-    filter(ubas != "N") %>%
-    group_by(snp) %>%
-    summarise(count = n()) 
+    filter(!is.na(refp)) %>% # ne garde que les positions ou la ref est connue
+    mutate(diff = refp - qpos) %>% # calcule la difference entre la position sur
+                                   # la sequnece et la position sur la ref
+    select(plas, diff) %>% # ne garde que les colonnes avec le nom du plasmide et
+                           # la différence
+    group_by(plas) %>%  # par plasmide
+    summarise(diff = diff %>% mean() %>% round() ) %>% # compte la moyenne des
+                                                       # différences, arrondie à
+                                                       # l'entier le plus proche
+    inner_join(data , ., by = "plas") %>% # regroupe avec la table mère
+    mutate(apos = qpos + diff) -> # calcule le décalage entre la position sur la
+                                  # séquence et la position sur la référnece
+    data
 
 
+  ## =============================================================================
+  ## PLOTS
+  ## =============================================================================
+  ##
+  ## on veut représenter un graphique avec toutes les positions présentant une
+  ## base non appelée, où il y aurait du polymorphisme, comparée à la position des
+  ## snps.
+  ##
   theme_set(
     theme_minimal(base_size = 6, base_family = "Courier") +
-    theme(panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"),
-          panel.grid.minor.y = element_line(colour = "gray", linetype = "dotted"),
+    theme(panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank(),
           panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank())
-  )
+          panel.grid.minor.x = element_blank()))
 
 
+  ## rajoute une colonne longueur qui détermine la longueur de la trace de
+  ## conversion par plasmide.
   data %>%
-    filter(ubas != "N") %>%
-    ggplot(data = .,
-           aes(x = qpos, y = plas, fill = ubas, label = ubas)) +
-    geom_tile() 
-    ## geom_text() 
-
-
-  data %>%
-    filter(!is.na(snp)) %>%
     rowwise() %>%
-    ## filter(ubas != "N") %>%
-    filter(scal != ubas) %>%
-    print()
-    {
-      .$qpos
-    } ->
-    snppos
+    filter(fcal == donn) %>%
+    ungroup() %>%
+    group_by(plas, mutt) %>%
+    summarise(len = max(refp) - min(refp)) %>%
+    inner_join(x = data, y = .) ->
+    data
 
+  ## distribution de la longueur de la trace de conversion.
+  data %>% select(plas, len) %>% group_by(plas) %>% summarise(max = max(len)) %>% qplot(data = ., max)  
+
+  ## distribution du nombre de positions polymorphes par transformant
   data %>%
-    filter(!is.na(snp)) %>%
-    rowwise() %>%
-    filter(fcal != base) %>%
+    filter(ubas != "N") %>% # ne regarde que les positions où on a du
+                            # polymorphisme
+    group_by(plas) %>%
+    summarise(ucnt = n()) %T>% # par plasmide, compte le nombre de positions
+                               # polymorphes
+    { print( ggplot(data = .) + geom_point(aes(ucnt, plas)) )} %>% 
+    filter(ucnt > 80) %T>% # au vu de la distribution, 80 semble un bon cutoff de
+                           # propreté
+    { print( ggplot(.) + geom_point(aes(ucnt, plas)) )} %>%
+    {.$plas} ->
+    seqcrade # sortie dans un vecteur.
+
+  ##' Cette fonction retourne un graphique ggplot2, avec en ordonnée les
+  ##' constructions et en abscisse la position sur la séquence de référence.
+  ##' Chaque point représente un pic ou phred a détecté un pic secondaire. Les
+  ##' axes verticaux représentent les positions de snp.
+  ##' @title plot_second_peak
+  ##' @param data la table de donnée
+  ##' @param mutt "strong" ou "weak", ne représente que les positions pour les
+  ##'   constructions weak ou strong
+  ##' @param length classe les séquences en fonction de leur longueur. 
+  ##' @param snp_only ne représente que les positions de SNP introduits. 
+  ##' @param clean enlève les séquences qui ont trop de polymorphes. 
+  ##' @return un graphique ggplot
+  plot_second_peak <-
+    function(data, sw = NULL, length = FALSE, clean = TRUE, snp_only = FALSE)
+  {
+    stopifnot(
+      sw == "weak" || sw == "strong" || is.null(sw),
+      typeof(length)   == "logical",
+      typeof(snp_only) == "logical" 
+    )
+
+    find_length <-
+      function(data) data %>% arrange(len) %>% {.$plas %>% unique()}
+
+    find_snppos <-
+      function(data) data %>%
+                       filter(!is.na(snp)) %>% group_by(refp) %>%
+                       summarise(count = n()) %>% {.$refp}
+
+    data %>%
+      { if (clean) filter(., !(plas %in% seqcrade)) else . } %>%  
+      { if (!is.null(sw))   filter(., mutt == sw) else . } %>%
+      { if (snp_only)       filter(., !is.na(snp))  else . } %>%
+      filter(ubas != "N") %>%
+      ggplot(
+        data = .,
+        aes(x = apos,
+            y = { if (length) (factor(plas, levels = find_length(data)))
+                  else plas },
+            color = ubas, fill = ubas, label = ubas)
+      ) +
+      geom_vline(xintercept = find_snppos(data), color = "gray", alpha = 0.5) +
+      geom_point(alpha = 0.5) +
+      xlab("Position sur la sequence de reference") +
+      ylab("Transformant") +
+      theme(legend.position = "bottom")
+  }
+
+  plot_second_peak(data, snp_only = FALSE, clean = TRUE, sw = "strong")
+
+  plot_second_peak(data, snp_only = FALSE, clean = TRUE , sw = "weak")
+
+  ## distribution de la longueur de trace de conversion 
+  data %>%
+    filter(!is.na(snp)) %>% # ne regarde que les positinos de snp
+    filter(!(plas %in% seqcrade)) %>% # enleve les sequences de faible qualité
+    rowwise %>% #
+    filter( base == donn ) %>% # détermine la première base sur la référence qui
+                               # n'est pas une base donneuse.
+    group_by(plas, mutt) %>%
+    summarise(switchp = min(refp, na.rm = TRUE) ) %>% # appelée switchp
+    group_by(mutt, switchp) %>%
+    summarise(count = n()) %T>% # détermine la distribution par mutant des ces
+                                # switchp
+    { print( ggplot(., aes(switchp, count, fill = mutt, color = mutt)) +
+             geom_point() + geom_bar(stat = "identity", size = 0.1, alpha = 0.2) 
+             ## facet_grid(mutt~.)
+            )} %>%
     print()
-    group_by(mutt) %>%
-    summarise(count = n()) 
 #+END_SRC
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
