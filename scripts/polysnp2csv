@@ -1,0 +1,162 @@
+#!/bin/bash
+
+cd ../data/snp-calling/strong
+
+## copie l'alignement référence dans .
+cp ../../ref/aln-strong-wt.fst .
+cp ../../ref/aln-weak-wt.fst .
+
+for spectro in ../../spectrograms/pS*.ab1
+do
+    # `basename $spectro`=`basename $spectro`
+    cp $spectro .
+    ../../../tools/polySNP/polySNP \
+        -r aln-strong-wt.fst \
+        -t `basename $spectro` \
+        -p 0 \
+        -c 0.05 \
+        > `basename $spectro`.snp
+
+    ## ============
+    ## fichier SNP
+    ## ============
+    #
+    # prend la première ligne de l'en tête des sorties de polySNP
+    # remplace les espaces par des .
+    # prend la sortie de polysnp,
+    # supprime les lignes vides,
+    # ajoute un champ ,snp
+    # remplace les virgule espace par des espaces
+    # sortie dans un fichier csv.
+
+    { ( head -n 1 ../header-snp.csv | sed 's/ /\./g' ) ; \
+      ( sed '/^$/d;s/$/,snp/;s/,\ / /g' `basename $spectro`.snp ) \
+    } | cat > `basename $spectro`.snp.csv
+
+    ## ============
+    ## fichier PHD
+    ## ============
+    #
+    # prend l'en-tête de phd,
+    # prend la sortie de phd,
+    # ne garde que les lignes entre begin_dna et end_dna, non incluses,
+    # remplace les ` ` par des `,`
+    # sortie dans un fichier csv.
+
+    { ( head -n 1 ../header-phd.csv ) ; \
+      ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' \
+            `basename $spectro`.phd.1 | \
+              sed -e "s/ /,/g;s/$/,strong,`basename $spectro`/" ) \
+    } | cat > `basename $spectro`.phd.csv
+
+    ## ============
+    ## fichier POLY
+    ## ============
+    #
+    # prend la sortie poly de phd,
+    # ne prend que la dernière ligne,
+    # remplace les doubles espaces par des ,
+    # ajoute un champ poly
+    # compte la position dans la séquence (ie nombre de ligne dans le fichier)
+    # sortie dans le fichier poly.
+
+    { ( head -n 1 ../header-poly.csv ) ; \
+      ( tail -n +2 `basename $spectro`.poly | \
+              sed 's/  /,/g;s/$/,poly/' | \
+              awk '$0=1+i++","$0' ) \
+    } | cat > `basename $spectro`.poly.csv
+
+    ## ============
+    ##   POOLING
+    ## ============
+    # join les fichiers phd et poly sur la base de la position dans le
+    # spectrogramme. join les fichiers obtenus sur la base de la position dans la
+    # séquence du tracefile.
+    # sortie dans un fichier csv.
+
+    csvjoin -c "position,positionCalledBase" --left \
+            `basename $spectro`.phd.csv `basename $spectro`.poly.csv | \
+        csvjoin -c "position, sposition" --left \
+                - `basename $spectro`.snp.csv > `basename $spectro`.csv
+done
+
+## ================================================================================
+##                                       WEAK
+## ================================================================================
+
+for spectro in ../../spectrograms/pW*.ab1
+do
+    # `basename $spectro`=`basename $spectro`
+    cp $spectro .
+    ../../../tools/polySNP/polySNP \
+        -r aln-weak-wt.fst \
+        -t `basename $spectro` \
+        -p 0 \
+        -c 0.05 \
+        > `basename $spectro`.snp
+
+    ## ============
+    ## fichier SNP
+    ## ============
+    #
+    # prend la première ligne de l'en tête des sorties de polySNP
+    # remplace les espaces par des .
+    # prend la sortie de polysnp,
+    # supprime les lignes vides,
+    # ajoute un champ ,snp
+    # remplace les virgule espace par des espaces
+    # sortie dans un fichier csv.
+
+    { ( head -n 1 ../header-snp.csv | sed 's/ /\./g' ) ; \
+      ( sed '/^$/d;s/$/,snp/;s/,\ / /g' `basename $spectro`.snp ) \
+    } | cat > `basename $spectro`.snp.csv
+
+    ## ============
+    ## fichier PHD
+    ## ============
+    #
+    # prend l'en-tête de phd,
+    # prend la sortie de phd,
+    # ne garde que les lignes entre begin_dna et end_dna, non incluses,
+    # remplace les ` ` par des `,`
+    # sortie dans un fichier csv.
+
+    { ( head -n 1 ../header-phd.csv ) ; \
+      ( awk '/BEGIN_DNA/{flag=1;next}/END_DNA/{flag=0}flag' \
+            `basename $spectro`.phd.1 | \
+              sed -e "s/ /,/g;s/$/,weak,`basename $spectro`/" ) \
+    } | cat > `basename $spectro`.phd.csv
+
+    ## ============
+    ## fichier POLY
+    ## ============
+    #
+    # prend la sortie poly de phd,
+    # ne prend que la dernière ligne,
+    # remplace les doubles espaces par des ,
+    # ajoute un champ poly
+    # compte la position dans la séquence (ie nombre de ligne dans le fichier)
+    # sortie dans le fichier poly.
+
+    { ( head -n 1 ../header-poly.csv ) ; \
+      ( tail -n +2 `basename $spectro`.poly | \
+              sed 's/  /,/g;s/$/,poly/' | \
+              awk '$0=1+i++","$0' ) \
+    } | cat > `basename $spectro`.poly.csv
+
+    ## ============
+    ##   POOLING
+    ## ============
+    # join les fichiers phd et poly sur la base de la position dans le
+    # spectrogramme. join les fichiers obtenus sur la base de la position dans la
+    # séquence du tracefile.
+    # sortie dans un fichier csv.
+
+    csvjoin -c "position,positionCalledBase" --left \
+            `basename $spectro`.phd.csv `basename $spectro`.poly.csv | \
+        csvjoin -c "position, sposition" --left \
+                - `basename $spectro`.snp.csv > `basename $spectro`.csv
+done
+
+cd ..
+csvstack ./strong/*.ab1.csv > huge-strong.csv

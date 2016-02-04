@@ -29,3 +29,6 @@ data/tmp/
 tools/
 /style.css
 /analysis/polymorph/_minted-rapport/default-pyg-prefix.pygstyle
+*.RData
+*.rdb
+*.rdx

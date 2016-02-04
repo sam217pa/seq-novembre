@@ -20,10 +20,7 @@ snp %>%
   xlab("Position sur la sequence de reference") +
   ylab("Nombre de sequence") +
   scale_fill_discrete(guide = FALSE) +
-  scale_colour_discrete(guide = FALSE) +
-  theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(size = 1, colour = "white"))
+  scale_colour_discrete(guide = FALSE) 
 ggsave("../../analysis/mutant-second.pdf")
 
 snp %>%
@@ -39,10 +36,7 @@ snp %>%
   xlab("Position sur la sequence de reference") +
   ylab("Nombre de sequence") +
   scale_fill_discrete(guide = FALSE) +
-  scale_colour_discrete(guide = FALSE) +
-  theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(size = 1, colour = "white"))
+  scale_colour_discrete(guide = FALSE) 
 ggsave("../../analysis/mutant-second-filter.pdf")
 
 snp %>%
@@ -51,6 +45,9 @@ snp %>%
   ungroup() %>%
   group_by(name, mutant) %>%
   summarise(debut = min(refpos), fin = max(refpos), longueur = fin - debut) %>%
+## print() %>%
+inner_join(x = snp, y = .)
+
   ggplot(aes(x = longueur, fill = mutant)) +
   geom_histogram(binwidth = 10) +
   facet_grid(mutant~.) +

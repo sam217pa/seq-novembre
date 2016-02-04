@@ -1,0 +1,768 @@
+#' ---
+#' title: "Description des positions polymorphes"
+#' author: "Samuel BARRETO"
+#' date: "31 janvier 2016"
+#' output:
+#'   html_document:
+#'     highlight: tango
+#'     theme: journal
+#'     toc: yes
+#' ---
+
+#+ setup, include=FALSE
+setwd("~/stage/seq_novembre/data/snp-calling")
+
+library(knitr)
+opts_knit$set(root.dir = "~/stage/seq_novembre/data/snp-calling/")
+opts_chunk$set(fig.width=15, fig.height=5, cache = FALSE, dev = 'svg',
+               include = TRUE, echo = FALSE, warning = FALSE, error = FALSE,
+               message = FALSE )
+
+#+ readdata
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(readr)
+library(magrittr)
+
+col_adn <- function() col_factor(c("a", "t", "c", "g", "n"))
+col_ADN <- function() col_factor(c("A", "T", "C", "G", "N"))
+
+# 10'' environ
+data <- readr::read_csv(
+  "huge-strong.csv",
+  col_types = cols(
+    baseCall     = col_adn(),
+    calledBase   = col_ADN(),
+    uncalledBase = col_ADN(),
+    ## areaUncalledBase = col_double(na = c("-1")),
+    mutant       = col_factor(c("strong", "weak")),
+    A.base       = col_ADN(),
+    B.base       = col_ADN(),
+    first.call   = col_ADN(),
+    second.call  = col_ADN(),
+    second.area  = col_double(),
+    snp_         = col_factor(c("snp"))),
+  na = c("-", "", "-1")) %>%
+  select(
+    plas = plasmide, # nom de la construction
+    mutt = mutant, # weak ou strong
+    base = baseCall, # 
+    ubas = uncalledBase, # base non appelée
+    fcal = first.call,
+    scal = second.call,
+    qpos = SCF.position, # position sur la séquence
+    recv = A.base,
+    donn = B.base,
+    air1 = area, # aire du pic primaire
+    air2 = areaUncalledBase,
+    rel1 = relativeAreaCalledPeak, # 
+    rel2 = relativeAreaUncalledBase,
+    refp = reference.position, 
+    ## upos = positionUncalledBase, # position de la base non appelée sur le spectrogramme 
+    ## rel2 = parse_double(relativeAreaUncalledBase, na = c("-1", NA)),
+    ## file = file,
+    ## anls = analysis,
+    ## datm = datum,
+    ## fara = first.area,
+    ## sara = second.area,
+    rat1 = uncorrected.proportion.A,
+    ## rat2 = uncorrected.proportion.B,
+    snp  = snp_,
+    qual = quality,
+    comt = comments,
+    spos = position, # position sur le spectrogramme
+    ## spos1= sposition, # position sur le spectrogramme
+    A    = A,
+    C    = C,
+    G    = G,
+    T    = T
+  ) %>%
+  mutate(base = toupper(base),
+         plas = gsub("-1073.ab1", "", plas),
+         rel2 = parse_double(.$rel2, na = c("-1")),
+         air2 = parse_double(.$air2, na = c("-1")))
+
+## réaffecte les niveaux de facteur. 
+##
+## | facteur | commentaire                                           |
+## |---------|-------------------------------------------------------|
+## | D       | WARNING: bases could not be matched                   |
+## | C       | WARNING: multiple peak span, data are not trustworthy |
+## | B       | WARNING: primary peak does not match the reference    |
+## | A       | processed normally                                    |
+
+## il n'y a pas dans les données de facteur C. d'où les trois niveaux de
+## facteur. sensible aux variations de paramètre polySNP à mon avis. à
+## surveiller.
+data$comt <- factor(data$comt)
+data$comt <- plyr::mapvalues(data$comt,
+                             from = levels(data$comt),
+                             to = c("D", "B", "A"))
+
+#+ algo
+##                                        # algo :
+## par plasmide,
+## trouve la première position alignée avec la référence
+## ajuste les positions avant celle là en fonction
+## ajuste les positions après en fonction. 
+##
+## stratégie : faire une table qui associe par position la position de référence
+## connue la plus proche, inner_join on it, calcul de la différence entre la
+## position de référence la plus proche et la position actuelle
+
+data %>%
+  filter(!is.na(refp)) %>% # ne garde que les positions ou la ref est connue
+  mutate(diff = refp - qpos) %>% # calcule la difference entre la position sur
+                                 # la sequnece et la position sur la ref
+  select(plas, diff) %>% # ne garde que les colonnes avec le nom du plasmide et
+                         # la différence
+  group_by(plas) %>%  # par plasmide
+  summarise(diff = diff %>% mean() %>% round() ) %>% # compte la moyenne des
+                                                     # différences, arrondie à
+                                                     # l'entier le plus proche
+  inner_join(data , ., by = "plas") %>% # regroupe avec la table mère
+  mutate(apos = qpos + diff) -> # calcule le décalage entre la position sur la
+                                # séquence et la position sur la référnece
+  data
+
+
+theme_set(
+  theme_minimal(base_size = 10, base_family = "Courier") +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(face = "bold", size = 12)))
+
+
+## rajoute une colonne longueur qui détermine la longueur de la trace de
+## conversion par plasmide.
+data %>%
+  rowwise() %>%
+  filter(fcal == donn) %>%
+  ungroup() %>%
+  group_by(plas, mutt) %>%
+  summarise(len = max(refp) - min(refp)) %>%
+  inner_join(x = data, y = .) ->
+  data
+
+
+
+# #' Cette fonction retourne un graphique ggplot2, avec en ordonnée les
+# #' constructions et en abscisse la position sur la séquence de référence.
+# #' Chaque point représente un pic ou phred a détecté un pic secondaire. Les
+# #' axes verticaux représentent les positions de snp.
+# #' @title plot_second_peak
+# #' @param data la table de donnée
+# #' @param mutt "strong" ou "weak", ne représente que les positions pour les
+# #'   constructions weak ou strong
+# #' @param length classe les séquences en fonction de leur longueur. 
+# #' @param snp_only ne représente que les positions de SNP introduits. 
+# #' @param clean enlève les séquences qui ont trop de polymorphes. 
+# #' @return un graphique ggplot
+plot_second_peak <-
+  function(data, sw = NULL, length = FALSE, clean = TRUE, snp_only = FALSE)
+{
+  stopifnot(
+    sw == "weak" || sw == "strong" || is.null(sw),
+    typeof(length)   == "logical",
+    typeof(snp_only) == "logical" 
+  )
+
+  find_length <-
+    function(data) data %>% arrange(len) %>% {.$plas %>% unique()}
+
+  find_snppos <-
+    function(data) data %>%
+                     filter(!is.na(snp)) %>%
+                     { if (!is.null(sw)) filter(., mutt == sw) else . } %>%
+                     group_by(refp) %>%
+                     summarise(count = n()) %>% {.$refp}
+
+  data %>%
+    # si clean is true, ne garde que les séquences absentes de seqcrade
+    { if (clean) filter(., !(plas %in% seqcrade)) else . } %>%  
+    # filter pour ne garder que les séquneces strong ou weak
+    { if (!is.null(sw))   filter(., mutt == sw) else . } %>%
+    # filtrer pour ne garder que les snp
+    { if (snp_only)       filter(., !is.na(snp))  else . } %>%
+    filter(ubas != "N") %>%
+    ggplot(
+      data = .,
+      aes(x = apos,
+          # si length, trier par longueur de conversion tract. 
+          y = { if (length) (factor(plas, levels = find_length(data)))
+                else plas },
+          color = ubas, fill = ubas, label = ubas)
+    ) +
+    geom_vline(xintercept = find_snppos(data), color = "gray", alpha = 0.5) +
+    geom_point(alpha = 0.6) +
+    xlab("Position sur la sequence de reference") +
+    ylab("Transformant") +
+    theme(legend.position = "bottom") +
+    ## scale_color_(discrete = TRUE, name = "Base\nSecondaire") +
+    scale_color_brewer(name = "Base\nSecondaire", palette = "Set1") +
+    scale_fill_discrete( name = "Base\nSecondaire")
+}
+
+## #' cette fonction définit si une base est strong ou weak. Si la base en question
+## #' est NA, alors renvoit un charactere vide.
+## #' @param base : une base d'ADN.
+base_caller <- function(base)
+{
+  if (is.na(base) || base == "N" ) { "" }
+  else if (base == "A" || base == "T") { "W" }
+  else { "S" }
+}
+
+
+find_length <-
+  function(data) data %>% arrange(len) %>% {.$plas %>% unique()}
+
+plot_first_second <-  function(data, sw = NULL, snp_only = FALSE) {
+
+  find_snppos <-
+    function(data) data %>%
+                     filter(!is.na(snp)) %>%
+                     { if (!is.null(sw)) filter(., mutt == sw) else . } %>%
+                     group_by(refp) %>%
+                     summarise(count = n()) %>% {.$refp}
+
+  data %>%
+    filter(ubas != "N") %>%
+    filter(!(plas %in% seqcrade)) %>%
+    { if(!is.null(sw)) filter(., mutt == sw) else . } %>%
+    { if(snp_only) filter(., snp == "snp")   else . } %>%
+    rowwise() %>%
+    mutate(type1  = base_caller(base),
+           type2  = base_caller(ubas)) %>%
+    ungroup() %>%
+    ggplot(aes(x     = apos,
+               y     = factor(plas, levels = find_length(.)),
+               label = paste0(type1, type2),
+               fill  = paste0(type1, type2))) +
+    ## geom_tile(alpha = 0.2) +
+    geom_point(aes(color = factor(paste0(type1, type2))), alpha = 0.5, size = 4) +
+    geom_text(aes(
+      color = factor(paste0(type1, type2))),
+      size = 2,
+      ## alpha = 0.6,
+      family = "Courier",
+      fontface = "bold") +
+    geom_vline(xintercept = find_snppos(data),
+               color = "gray", alpha = .5
+               ) +
+    scale_fill_brewer(palette = "Set1") +
+    scale_color_brewer(palette = "Set1") +
+    xlab("Position sur la sequence de reference") +
+  ylab("") +
+  ggtitle(paste("Constructions", toupper(sw))) +
+  guides(colour = guide_legend(title = ""), fill = "none") +
+    theme(legend.position = "bottom",
+          panel.grid.major.y = element_line(color = "gray", linetype = "dotted"))
+}
+
+plot_snp_pos <- function(data, sw) {
+
+  faclevel <-
+    function(x, y) factor(paste0(x, y), levels = c("SS", "SW", "WS", "WW", "S", "W"))
+
+  data %>%
+    filter(snp == "snp") %>%
+    filter(mutt == sw) %>%
+    filter(!(plas %in% seqcrade)) %>%
+    rowwise() %>%
+    mutate(type1 = base_caller(base),
+           type2 = base_caller(ubas)) %>%
+    ungroup() %>%
+    ggplot(aes(x = apos,
+               y = factor(plas, levels = find_length(.)),
+               label = faclevel(type1, type2),
+               ## fill = faclevel(type1, type2),
+               color = faclevel(type1, type2))) +
+    geom_point(alpha = 0.4, size = 4) +
+    geom_text(size = 2, family = "Courier", fontface = "bold") +
+    ## scale_fill_brewer(palette = "Set1") +
+    scale_color_viridis(discrete = TRUE) +
+    labs(x = "Position sur la sequence de reference", y = "") +
+    ggtitle(paste("Transformants", toupper(sw))) +
+    guides(colour = guide_legend(title = ""), fill = "none") +
+    theme(legend.position = "bottom",
+          panel.grid.major.y = element_line(color = "gray", linetype = "dotted"))
+
+}
+#' # Analyses des positions polymorphes
+#'
+#' ## Toutes les positions
+#' 
+#' Le graphique suivant représente toutes les positions par séquence auxquelles
+#' _phred_ détecte un pic secondaire. La couleur représente la base au pic
+#' secondaire. Les traits verticaux représentent les positions de SNP
+#' introduites. Le trait horizontal démarque les donneurs STRONG (en bas) des
+#' WEAK.
+
+#+ seqbruit, fig.height = 15, fig.width = 15
+plot_second_peak(data, clean = FALSE) +
+  geom_hline(yintercept = 84.5, linetype = "dotted")
+
+#' Certaines séquences sont extrêmement bruitées. Le graphique suivant
+#' représente le nombre de positions polymorphe par plasmide.
+
+#+ bruitdistrib, fig.height = 7
+data %>%
+  filter(ubas != "N") %>% # ne regarde que les positions où on a du
+                          # polymorphisme
+  group_by(plas,mutt) %>%
+  summarise(ucnt = n()) %T>% # par plasmide, compte le nombre de positions
+                             # polymorphes
+  { print( ggplot(data = .) +
+           geom_point(aes(ucnt, plas, color = mutt)) +
+           geom_vline(xintercept = 80, color = "red", linetype = "dotted") +
+           scale_color_brewer(palette = "Set1", guide = FALSE)
+          )} %>%
+  filter(ucnt > 80) %>% # au vu de la distribution, 80 semble un bon cutoff de
+                         # propreté
+  {.$plas} ->
+  seqcrade # sortie dans un vecteur.
+
+#' J'ai utilisé le seuil de 80 positions polymorphes pour discriminer les
+#' séquences propres des séquences "sales" (cutoff en rouge).
+
+#' Sans ces même séquences : 
+#+ seqclean, fig.height = 15
+plot_second_peak(data, clean = TRUE) +
+  geom_hline(yintercept = 79.5, linetype = "dotted")
+
+## #' Seulement les séquences des transformants _strong_
+## #+ seqstrong, fig.height = 7.5
+## plot_second_peak(data, sw = "strong")
+
+## #' Seulement les séquences des transformants _weak_
+## #+ seqweak, fig.height = 7.5
+## plot_second_peak(data, sw = "weak")
+
+#' Si on ne regarde que les positions de SNP 
+#+ seqsnpall, fig.height = 7 
+plot_second_peak(data, snp_only = TRUE) + geom_hline(yintercept = 11.5, linetype = "dotted")
+
+#' On voit plusieurs choses :
+#'
+#' 1) il y a nettement plus de positions polymorphes dans nos marqueurs avec les
+#' donneurs WEAK qu'avec les donneurs STRONG (184 contre 26),
+
+#+ muttcount, fig.height = 2
+data %>%
+  filter(!is.na(snp)) %>%
+  filter(!(plas %in% seqcrade)) %>%
+  filter(ubas != "N") %>%
+  group_by(mutt) %>%
+  summarise(count = n()) %>%
+  ggplot(data = ., aes(x = mutt, y = count, fill = mutt )) +
+  geom_bar(stat = "identity", width = 0.01) +
+  geom_point(aes(color = mutt)) +
+  scale_fill_brewer(palette = "Set1" , guide = FALSE) +
+  scale_color_brewer(palette = "Set1", guide = FALSE) +
+  coord_flip() +
+  labs(x = "Nombre de\npositions polymorphes", y = "Donneurs")
+
+#' 2) le nombre de positions polymorphes par séquence est assez variable.
+
+#+ muttplascount, fig.height = 5
+data %>%
+  filter(!is.na(snp)) %>%
+  filter(!(plas %in% seqcrade)) %>%
+  filter(ubas != "N") %>%
+  group_by(mutt, plas) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  arrange(desc(count)) %>%
+  ggplot(data = .,
+         aes(y = count,
+             x = factor(plas, levels = {.$plas}),
+             fill = mutt, color = mutt)) +
+  geom_point() +
+  geom_bar(stat = "identity", width = 0.1, alpha = 0.3) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1", guide = FALSE) +
+  scale_color_brewer(palette = "Set1", guide = FALSE) +
+  labs(x = "Transformants", y = "Nombre de positions polymorphes")
+
+#' 3) les pics secondaires ne sont pas nécessairement spécifiques de nos
+#' marqueurs :
+
+#+ countsnpna, fig.height = 1
+data %>%
+  filter(ubas != "N") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  group_by(snp) %>%
+  summarise(count = n()) %>%
+  ggplot(data = .,
+         aes(x = snp, y = count)) +
+  geom_bar(stat = "identity", width = 0.05, fill = "gray") +
+  geom_point() +
+  coord_flip() 
+
+#' 4) mais la fréquence de pic secondaire est plus élevée dans les sites
+#' marqueurs que dans les sites normaux.
+
+#+ freq1, fig.height = 7
+data %>%
+  filter(!(plas %in% seqcrade)) %>%
+  filter(ubas != "N") %>%
+  group_by(plas) %>%
+  summarise(totalpoly = n()) %>%
+  inner_join(x = data, y = . ) %>%
+  filter(ubas != "N") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  group_by(mutt, plas, snp, totalpoly) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  mutate(freq = count / totalpoly) %>%
+  filter(!is.na(snp)) %>%
+  arrange(desc(freq)) %>%
+  ggplot(data = .,
+         aes(x = factor(plas, levels = {.$plas}),
+             y = freq)) +
+  geom_bar(aes(fill = mutt), stat = "identity", width = 0.2) +
+  geom_point(aes(size = count, color = count)) +
+  coord_flip() +
+  scale_color_viridis(begin = 0.2, end = 0.9,
+                      name = "Nombre de positions\navec pic secondaire",
+                      guide = guide_legend(direction = "horizontal",
+                                           label.position = "bottom")) +
+  scale_fill_viridis(discrete = TRUE, begin = 0.8, end = 0.2,
+                     name = "Type de donneur",
+                     guide = guide_legend(direction = "horizontal")) +
+  scale_size_area(max_size = 10, guide= FALSE) +
+  labs(x = "Donneur", y = "Frequence des sites avec\npic secondaire correspondant aux marqueurs") +
+  theme(legend.position = c(0.8, 0.8))
+
+#+ freq2, fig.height = 5
+data %>%
+  filter(ubas != "N") %>%
+  group_by(plas) %>%
+  summarise(totalpoly = n()) %>%
+  inner_join(x = data, y = . ) %>%
+  filter(ubas != "N") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  group_by(mutt, plas, snp, totalpoly) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  mutate(freq = count / totalpoly) %>%
+  arrange(desc(totalpoly)) %>%
+  mutate(snp = factor(ifelse(is.na(snp), "autre", "snp"),
+                      levels = c("autre", "snp"))) %>%
+  ggplot(data = ., aes(x = factor(plas, levels= {.$plas}), y = count )) +
+  geom_bar(aes(fill = snp), stat = "identity", width = 0.3, position = "dodge") +
+  geom_point(aes(color = snp)) +
+  scale_color_viridis(begin = 0.2, end = 0.8, discrete = TRUE ) +
+  scale_fill_viridis(begin = 0.2, end = 0.8, discrete = TRUE ) +
+  geom_hline(yintercept = 0, color = "gray") +
+  labs(x = "Donneur", y = "Nombre de positions") +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 6),
+    panel.grid.major.x = element_line(linetype = "dotted", color = "gray")
+  )
+
+#' J'ai ensuite voulu regarder la répartition par séquence de ces seconds pics.
+#' La base majoritaire correspond-elle plus souvent à la base donneuse, à la
+#' base receveuse, ou aucun des deux ?
+#'
+#' Le graphique suivant représente donc toutes les positions où phred détecte un
+#' pic secondaire, encore une fois. La couleur du point représente les
+#' différents cas de figure : rouge pour les cooccurences SS, bleu pour les
+#' cooccurences SW (pic majoritaire S et pic secondaire W), vert pour l'inverse
+#' et violet pour les cas WW. 
+
+#+ snp_altern, fig.height = 10
+plot_first_second(data)
+
+#' Si on compte le nombre de cooccurences différentes :
+#+ coocurrcount, fig.height = 2 
+data %>%
+  filter(ubas != "N") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  rowwise() %>%
+  mutate(altern = paste0(base_caller(base), base_caller(ubas)) %>%
+           factor(levels = c("SS", "SW", "WS", "WW", "S", "W"))) %>%
+  group_by(mutt, altern) %>%
+  summarise(count = n()) %>%
+  ggplot(data = .,
+         aes(x = altern, y = count, fill = altern)) +
+  geom_point(aes(color = altern, size = count)) +
+  geom_bar(stat = "identity", width = 0.1, alpha = 0.4) +
+  facet_grid(mutt~.) +
+  scale_size(guide = FALSE) +
+  scale_fill_brewer( palette = "Set1", guide = FALSE) +
+  scale_color_brewer(palette = "Set1", guide = FALSE) +
+  labs(y = "Nombre de positions polymorphes",
+       x = "Type de coocurrence") +
+  theme(legend.position = "bottom") +
+  coord_flip()
+
+#' Il y a autant de coocurrences `WS` (donneur / sauvage) quand le donneur est
+#' _weak_ que de cooccurrences `SW` (donneur / sauvage) quand le donneur est
+#' _strong_. Par contre, il y a plus de cooccurrences `SW` (sauvage / donneur)
+#' quand le donneur est _weak_ que de cooccurences `WS` (sauvage / donneur)
+#' quand le donneur est _strong_. Il y a également un nombre relativement élevé
+#' de cooccurences `SS` et `WW`.
+
+## #+ firstsecondweak, fig.height = 7
+## plot_first_second(data, "weak")
+
+#' Si on ne regarde que les positions de SNP pour les donneurs WEAK. 
+#+ firstsecondweaksnp, fig.height = 7
+plot_first_second(data, "weak", TRUE)
+
+#' Idem, seulement les SNP pour les donneurs STRONG. 
+#+ firstsecondstrongsnp
+plot_first_second(data, "strong", TRUE)
+
+#' Certains reads ne sont pas homogènes : tantôt la base donneuse est
+#' majoritaire, tantôt la base receveuse. Le graphique suivant est un alignement
+#' de toutes les positions de SNP pour les donneurs WEAK, classés par longueur
+#' de trace de conversion.
+
+#+ snpposweak, fig.height = 15
+plot_snp_pos(data, "weak") 
+
+#' Idem pour les transformants _strong_.
+
+#+ snpposstrong, fig.height = 15
+plot_snp_pos(data, "strong")
+
+#' On en a conclu plusieurs choses :
+#'
+#' 1) il semble que les couleurs associées soit plutôt bleu avec jaune et violet
+#' avec vert. Autrement dit les pics majoritaires dans la trace de conversion
+#' sont plutôt weak chez les donneurs weak, et les pics majoritaires en dehors
+#' de la trace correspondent à la base strong.
+#'
+#' 2) Dans l'hypothèse où ce seraient des contaminations : on dispose du plan de
+#' plaque, on peut donc essayer de tester l'association entre les contaminations
+#' qu'on observe et les séquences présentes dans les transformants des autres
+#' puits. Une sorte de démineur des conta. La méthode n'est encore pas établie.
+#'
+#' 3) On retrouve toujours les bases strong (en vert) au milieu des séquences de
+#' weak (en jaune). Ça pourrait être dû à des traces de conversions complexes.
+#' En tout les cas ces mutations ne sont pas associées à des seconds pics, pour
+#' 4 des 6 cas que Laurent avait détecté auparavant.
+#'
+#' 4) Concernant le problème des contaminations : on s'est dit qu'il pouvait
+#' subsister l'ADN du plasmide, adsorbé sur la bactérie transformante et qu'on
+#' isole sur le milieu. La bactérie isolée, en cours de croissance, pourrait
+#' utiliser cet ADN pour un deuxième évènement de recombinaison. Si au lieu d'un
+#' évènement de recombinaison, on a plusieurs évènements, qui utilisent cet ADN
+#' résiduel comme matrice, ça pourrait expliquer les profils de polymorphismes
+#' qu'on observe, qui semblent associé (globalement) spécifiquement à nos SNP.
+#' On veut donc traiter les clones, avant d'étaler, par de la DNAse, pour
+#' éliminer les traces de plasmides résiduels.
+
+#' # distribution de la longueur de trace de conversion
+#' 
+#+ tractlength, fig.height = 5
+data %>%
+  filter(!is.na(snp)) %>% # ne regarde que les positinos de snp
+  filter(!(plas %in% seqcrade)) %>% # enleve les sequences de faible qualité
+  rowwise %>% #
+  filter( base == donn ) %>% # détermine la première base sur la référence qui
+                             # n'est pas une base donneuse.
+  ungroup() %>%
+  group_by(plas, mutt) %>%
+  summarise(switchp = min(refp, na.rm = TRUE) ) %>% # appelée switchp
+  group_by(mutt, switchp) %>%
+  summarise(count = n()) %>% # détermine la distribution par mutant des ces
+                             # switchp
+  ggplot(., aes(switchp, count)) +
+  geom_bar(aes(fill = mutt), stat = "identity",
+           alpha = 0.5, position = "dodge", width = 0.5) +
+  geom_point(aes(color = mutt)) +
+  scale_fill_discrete(guide = FALSE) +
+  scale_color_brewer(palette = "Set1", name = "Donneur") +
+  labs(x = "Position de basculement")
+
+#' On ne voit pas une variation affolante entre la longueur des traces de
+#' conversions issues des donneurs weak et strong.
+    
+#' # Variations des scores de confiance
+#'
+#' Chaque fois qu'un pic secondaire est détecté, un ratio d'aire est calculé
+#' entre le pic primaire et le pic secondaire (ratio = 1 => pics équivalents).
+#' J'ai voulu voir la façon dont ces ratios étaient distribués sur les
+#' séquences. On peut regarder cette variabilité intra et inter-séquence.
+#' <br></br>
+#' 
+#' ## Variabilité intra séquence
+#' 
+#' Le graphique suivant représente la distribution des scores de confiance par
+#' read. La couleur et la taille des points correspondent au ratio des pics
+#' (secondaire / primaire, toujours < 1).
+
+#+ ratioread, fig.height = 15, dev = "png"
+data %>%
+  filter(ubas != "N") %>%
+  ## filter(mutt == "weak") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  ggplot(data = .,
+         aes(x = apos, y = plas)) +
+  geom_point(aes(size = rel2, color = rel2), alpha = 0.8) +
+  scale_color_viridis(begin = 1, end = 0, name = "Ratio") +
+  scale_size_area(max_size = 3, guide = FALSE) +
+  labs(x = "Position sur la reference", y = "Transformants") +
+  theme(legend.position = "bottom",
+        panel.grid.major.y = element_line(color = "gray", linetype = "dotted"))
+
+#' Il semble que les scores varient assez peu au sein d'une même séquence. C'est
+#' ce que le graphique suivant cherche à montrer.
+
+#+ ratioread2, fig.height = 7
+data %>%
+  filter(ubas != "N") %>%
+  ## filter(mutt == "strong") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  ggplot(data = .,
+         aes(x = apos, y = rel2)) +
+  geom_point(aes(size = rel2, color = rel2), alpha = 0.8) +
+  geom_line(aes(group = plas, color = rel2), alpha = 0.3) +
+  scale_color_viridis(begin = 1, end = 0, guide = FALSE) +
+  scale_size_area(max_size = 3, guide = FALSE) +
+  labs(x = "Position sur la reference", y = "Ratio\nPic Secondaire /\nPic Primaire") +
+  theme(legend.position = "bottom",
+        panel.grid.major.y = element_line(color = "gray", linetype = "dotted"))
+
+#' Hormis quelques points, les lignes se croisent assez peu, d'une position à
+#' l'autre. Le graphique suivant représente la mediane et la déviation absolue à
+#' la médiane des ratios de pic, globalement assez ressérés autour de 0.15. 0.2
+#' est un score assez conservateur, il correspond clairement à un pic
+#' secondaire, lorsqu'on le vérifie visuellement sur les spectrogrammes.
+
+#+ ratiomad, fig.height = 12
+data %>%
+  filter(ubas != "N") %>%
+  filter(!(plas %in% seqcrade)) %>%
+  group_by(plas, mutt) %>%
+  summarise(med = median(rel2, na.rm = TRUE),
+            mad = mad(rel2, na.rm = TRUE)) %>%
+  arrange(mad) %>%
+  ggplot(data = .,
+         aes(y = plas, x = med, color = med )) +
+  geom_point() +
+  geom_errorbarh(aes(xmax = med + mad, xmin = med - mad )) +
+  scale_color_viridis(begin = 1, end = 0, guide = FALSE) +
+  theme(legend.position = "bottom") +
+  labs(x = "Médiane des ratios par read")
+
+#' # Type de transitions
+#'
+#' J'ai enfin voulu regarder quelles types de transitions étaient favorisées
+#' selon les donneurs.
+#'
+purpyr_caller <- function(base)
+{
+  if (is.na(base) || base == "N" ) { "N" }
+  else if (base == "A" || base == "G") { "pur" }
+  else { "pyr" }
+}
+
+## data %>%
+##   filter(!is.na(snp)) %>%
+##   filter(base != recv) %>%
+##   mutate(trans = paste0(base, recv)) %>%
+##   group_by(mutt, trans) %>%
+##   summarise(count = n()) %>%
+##   ggplot(data = .,
+##          aes(x = trans, y = count )) +
+##   geom_point() +
+##   geom_bar(aes(fill = mutt), stat = "identity")
+
+data %>%
+  filter(!is.na(snp)) %>%
+  filter(base != recv) %>%
+  rowwise() %>%
+  mutate(purpyr_base = purpyr_caller(base),
+         purpyr_wt   = purpyr_caller(recv),
+         purpyr_trans= paste0(purpyr_wt,"->",purpyr_base)) %>%
+  filter(purpyr_base != "N") %>%
+  ungroup() %>%
+  group_by(mutt, purpyr_trans) %>%
+  summarise(count = n()) %>%
+  ggplot(data = .,
+         aes(x = purpyr_trans, y = count, size = count, color = mutt )) +
+  geom_point() +
+  scale_color_viridis(begin = 0.1, end = 0.9, discrete = TRUE) +
+  scale_size(guide = FALSE) +
+  labs(x = "", y = "Nombre de transitions") +
+  coord_flip() +
+  theme(panel.grid.major.y = element_line(linetype = "dotted", color = "gray"))
+
+
+#' # Biblio
+#'
+#' - papier J bac de Yáñez-Cuna _et al_.
+#' 
+
+#' # Séquençage :
+#'
+#' ## Séquençage des ancres
+#'
+#' - but : déterminer si les taux de néomutation anormalement élevés qu'on
+#' observe dans certaines séquences sont bien conversion-tract dépendant, comme
+#' observé à priori.
+#'
+#' - résultats : séquences dégueulasses. 
+#' 
+#'
+#' ## Séquençage des produits de recombinaison des clones avec polymorphismes
+
+#' # Analyse de l'association
+#'
+#' Le but est de faire un plan de plaque pour étudier l'association entre le
+#' nombre de position polymorphe et la position dans la plaque.
+#' 
+## data %>%
+##   filter(!(plas %in% seqcrade )) %>%
+##   filter(!is.na(snp)) %>%
+##   filter(ubas != "N") %>%
+##   group_by(plas, mutt) %>%
+##   summarise(count = n()) %>%
+##   rowwise() %>%
+##   mutate(plas = gsub(pat= "p.", rep = "", x = plas) ) %>%
+##   filter(mutt == "weak") %>%
+##   select(-mutt) %T>%
+##   {leavenames <- .$plas} 
+##   data.matrix() %>%
+##   dist() %>%
+##   hclust() %>%
+##   plot()
+
+##   as.matrix() %>%
+##   heatmap.2(
+##     col = viridis(n = 299),
+##     trace = "none",
+##     density.info = "none",
+##     notecol = "black",
+##     key = FALSE
+##   )
+
+ 
+
+## ( matrix(1:96, nrow = 8, ncol = 12) -> plaque )
+## ( colnames(plaque) <- LETTERS[1:12] )
+## ( rownames(plaque) <- letters[1:8]  )
+## plaque %>% data.frame(col = rownames(plaque) ) %>% tbl_df() %>%
+##   gather(value = A:L)
+
+
+## library(gplots)
+## heatmap.2(
+##   x = weak_table %>% select(-mutt) %>% data.matrix() 
+## )
+
+## heatmap(
+##   weak_table %>% select(-mutt) %>% data.matrix() %>% dist() %>% hclust()
+## )
+
+## heatmap(dist(weak_table %>% select(-mutt) %>% data.matrix))
+
+## weak_table %>%
