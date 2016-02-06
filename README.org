@@ -2469,52 +2469,56 @@ bien lu) avec la GPL.
   #' Le but est de faire un plan de plaque pour étudier l'association entre le
   #' nombre de position polymorphe et la position dans la plaque.
   #' 
-  ## data %>%
-  ##   filter(!(plas %in% seqcrade )) %>%
-  ##   filter(!is.na(snp)) %>%
-  ##   filter(ubas != "N") %>%
-  ##   group_by(plas, mutt) %>%
-  ##   summarise(count = n()) %>%
-  ##   rowwise() %>%
-  ##   mutate(plas = gsub(pat= "p.", rep = "", x = plas) ) %>%
-  ##   filter(mutt == "weak") %>%
-  ##   select(-mutt) %T>%
-  ##   {leavenames <- .$plas} 
-  ##   data.matrix() %>%
-  ##   dist() %>%
-  ##   hclust() %>%
-  ##   plot()
 
-  ##   as.matrix() %>%
-  ##   heatmap.2(
-  ##     col = viridis(n = 299),
-  ##     trace = "none",
-  ##     density.info = "none",
-  ##     notecol = "black",
-  ##     key = FALSE
-  ##   )
-  
- 
+  ,#+ planplaque
 
-  ## ( matrix(1:96, nrow = 8, ncol = 12) -> plaque )
-  ## ( colnames(plaque) <- LETTERS[1:12] )
-  ## ( rownames(plaque) <- letters[1:8]  )
-  ## plaque %>% data.frame(col = rownames(plaque) ) %>% tbl_df() %>%
-  ##   gather(value = A:L)
+  plaque <- matrix(1:96, nrow = 8, ncol = 12) 
+  colnames(plaque) <- LETTERS[1:12] 
+  rownames(plaque) <- letters[1:8]  
+  plaque <- reshape2::melt(plaque, value.name = "puit")
+  colnames(plaque) <- c("colonne", "ligne", "puit")
 
+  data %>%
+    filter(!(plas %in% seqcrade )) %>% # ne garde que les séquences propres 
+    filter(!is.na(snp)) %>% # ne garde que les positions de SNP
+    filter(ubas != "N") %>% # ne garde que les postions de pic secondaire
+    rowwise() %>% 
+    mutate(plas = gsub(pat= "p.", rep = "", x = plas) ) %>% # remplace les
+                                                            # caractères inutiles
+    ungroup() %>%
+    group_by(plas, mutt) %>% # compte le nombre d'occurence par transformant
+    summarise(count = n()) %>%
+    ungroup() %>%
+    mutate(plas  = as.integer(plas)) %>% # même types pour le join
+    left_join(plaque, y = ., by = c("puit" = "plas")) %>% # joint sur le puit
+    mutate(count = replace(count, is.na(count), 0))  %>% # remplace les NA par 0
+    filter(!is.na(mutt)) %>% # enlève les positions où on n'a rien
+    ggplot(aes(y = factor(colonne, levels = c("h", "g", "f", "e", "d", "c", "b", "a")),
+               x = ligne)) +
+    geom_point(aes(color = count, size = count)) +
+    facet_grid(mutt~.) +
+    scale_color_viridis() +
+    scale_size_area(max_size = 20) +
+    guides(
+      colour = guide_legend(title = "Nombre de positions\navec pic secondaire",
+                            size = 2),
+      size = "none") +
+    ggthemes::theme_fivethirtyeight() +
+    theme(
+      panel.grid.major.y = element_line(linetype = "dotted", color = "gray"),
+      panel.grid.major.x = element_line(linetype = "dotted", color = "gray"),
+      legend.title = element_text(size = 8),
+      plot.title = element_text(size = 18),
+      panel.margin = unit(1, "cm"),
+      strip.text = element_text(size = 14, face = "bold")
+    ) +
+    ggtitle("Emplacement des transformants\nmontrant des pics secondaires")
 
-  ## library(gplots)
-  ## heatmap.2(
-  ##   x = weak_table %>% select(-mutt) %>% data.matrix() 
-  ## )
+  ## ggsave("../../analysis/plaque_plan.pdf")
 
-  ## heatmap(
-  ##   weak_table %>% select(-mutt) %>% data.matrix() %>% dist() %>% hclust()
-  ## )
-
-  ## heatmap(dist(weak_table %>% select(-mutt) %>% data.matrix))
-
-  ## weak_table %>%
+  #' Il semblerait que les séquences contaminées soient réparties uniformément
+  #' dans les séquences _strong_, mais qu'elles soient clusterisées autour de deux
+  #' "secteur" dans la plaque _weak_.
 #+END_SRC
 
 
