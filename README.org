@@ -1764,7 +1764,7 @@ bien lu) avec la GPL.
   library(knitr)
   opts_knit$set(root.dir = "~/stage/seq_novembre/data/snp-calling/")
   opts_chunk$set(fig.width=15, fig.height=5, cache = FALSE, dev = 'svg',
-                 include = TRUE, echo = FALSE, warning = FALSE, error = FALSE,
+                 include = TRUE, echo = TRUE, warning = FALSE, error = FALSE,
                  message = FALSE )
 
   ,#+ readdata
@@ -2333,7 +2333,7 @@ bien lu) avec la GPL.
 
   #' On ne voit pas une variation affolante entre la longueur des traces de
   #' conversions issues des donneurs weak et strong.
-      
+  
   #' # Variations des scores de confiance
   #'
   #' Chaque fois qu'un pic secondaire est détecté, un ratio d'aire est calculé
@@ -2370,10 +2370,11 @@ bien lu) avec la GPL.
     filter(ubas != "N") %>%
     ## filter(mutt == "strong") %>%
     filter(!(plas %in% seqcrade)) %>%
-    ggplot(data = .,
-           aes(x = apos, y = rel2)) +
+    ggplot(data = ., aes(x = apos, y = rel2)) +
     geom_point(aes(size = rel2, color = rel2), alpha = 0.8) +
     geom_line(aes(group = plas, color = rel2), alpha = 0.3) +
+    geom_vline(xintercept = data %>% filter(!is.na(snp)) %>% group_by(refp) %>% summarise(count = n()) %>% {.$refp},
+               color = "gray", size = 0.1) +
     scale_color_viridis(begin = 1, end = 0, guide = FALSE) +
     scale_size_area(max_size = 3, guide = FALSE) +
     labs(x = "Position sur la reference", y = "Ratio\nPic Secondaire /\nPic Primaire") +
@@ -2401,6 +2402,43 @@ bien lu) avec la GPL.
     scale_color_viridis(begin = 1, end = 0, guide = FALSE) +
     theme(legend.position = "bottom") +
     labs(x = "Médiane des ratios par read")
+
+  #' J'ai voulu regarder sur l'ensemble des séquences, la fréquence des sites avec
+  #' un pic secondaire par position. L'idée est de montrer que les pics
+  #' secondaires sont plus fréquents aux positions de SNP maqueurs qu'on a
+  #' introduit qu'aux autres positions.
+
+  ,#+ freqpicparpos, fig.height = 8
+  data %>%
+    mutate(has_sp = ifelse(ubas != "N", TRUE, FALSE)) %>%
+    filter(has_sp) %>%
+    group_by(apos) %>%
+    summarise(n_ps = n()) %>%
+    inner_join(x = data, y = .) %>%
+    group_by(apos, n_ps) %>%
+    summarise(n_apos = n()) %>%
+    mutate(freq = n_ps / n_apos) %>%
+    ggplot(data = ., aes(apos, freq)) +
+    geom_point(aes(color = freq, size = freq)) +
+    geom_line(alpha = 0.1) +
+    scale_x_continuous(breaks =
+                         data %>% filter(!is.na(snp), mutt == "weak") %>%
+                         group_by(refp) %>%
+                         summarise(count = n()) %>% {.$refp} ) +
+    scale_y_continuous(limits = c(0, 0.30)) + 
+    scale_color_viridis(begin = 0.95, end = 0) +
+    ## scale_y_log10() +
+    guides(color = "none", alpha = "none", size = "none") +
+    ggthemes::theme_fivethirtyeight() +
+    xlab("Position sur la reference") +
+    ylab("Frequence de pic secondaire") +
+    ggtitle("Frequence des bases avec pic\nsecondaire a une position donnee") +
+    theme(
+      panel.grid.major.y = element_line(linetype = "dotted", color = "gray", size = 0.1),
+      panel.grid.major.x = element_line(linetype = "dotted", color = "gray", size = 0.4),
+      axis.text.x = element_text(size = 6),
+      axis.text.y = element_text(size = 6),
+      axis.title.x = element_text(color = "black", size = 8)) 
 
   #' # Type de transitions
   #'
@@ -2446,31 +2484,13 @@ bien lu) avec la GPL.
     theme(panel.grid.major.y = element_line(linetype = "dotted", color = "gray"))
 
 
-  #' # Biblio
-  #'
-  #' - papier J bac de Yáñez-Cuna _et al_.
-  #' 
-
-  #' # Séquençage :
-  #'
-  #' ## Séquençage des ancres
-  #'
-  #' - but : déterminer si les taux de néomutation anormalement élevés qu'on
-  #' observe dans certaines séquences sont bien conversion-tract dépendant, comme
-  #' observé à priori.
-  #'
-  #' - résultats : séquences dégueulasses. 
-  #' 
-  #'
-  #' ## Séquençage des produits de recombinaison des clones avec polymorphismes
-
-  #' # Analyse de l'association
+  #' # Analyse de la répartition des séquences avec pics secondaires dans la plaque
   #'
   #' Le but est de faire un plan de plaque pour étudier l'association entre le
   #' nombre de position polymorphe et la position dans la plaque.
   #' 
 
-  ,#+ planplaque
+  ,#+ planplaque, fig.height = 8
 
   plaque <- matrix(1:96, nrow = 8, ncol = 12) 
   colnames(plaque) <- LETTERS[1:12] 
@@ -2514,13 +2534,230 @@ bien lu) avec la GPL.
     ) +
     ggtitle("Emplacement des transformants\nmontrant des pics secondaires")
 
-  ## ggsave("../../analysis/plaque_plan.pdf")
+  #' Il semble quand on regarde vaguement comme ça les séquences "contaminées",
+  #' _ie_ avec des pics secondaires, qu'elles soient relativement clusterisées
+  #' autour de quelques positions. On a donc voulu tester par une simulation si la
+  #' répartition est aléatoire ou non. Si elle ne l'est pas, ça peut vouloir
+  #' indiquer une contamination.
+
+
+  ,#+ weak_plaque
+
+  # reconstruit la plaque weak en matrice
+  data %>%
+    filter(!(plas %in% seqcrade )) %>% # ne garde que les séquences propres 
+    filter(!is.na(snp)) %>% # ne garde que les positions de SNP
+    filter(mutt == "weak") %>%
+    filter(ubas != "N") %>% # ne garde que les postions de pic secondaire
+    rowwise() %>% 
+    mutate(plas = gsub(pat= "p.", rep = "", x = plas) ) %>% # remplace les
+                                                            # caractères inutiles
+    ungroup() %>%
+    group_by(plas) %>% # compte le nombre d'occurence par transformant
+    summarise(count = n()) %>%
+    ungroup() %>%
+    mutate(plas  = as.integer(plas)) %>% # même types pour le join
+    left_join(plaque, y = ., by = c("puit" = "plas")) %>% # joint sur le puit
+    mutate(count = replace(count, is.na(count), 0))  %>% # remplace les NA par 0
+    {.$count %>% matrix(nrow = 8, ncol = 12)} ->
+    weak_plaque
+
+  print(weak_plaque)
+
+  ,#+ strong_plaque
+
+  # reconstruit la plaque strong en matrice
+  data %>%
+    filter(!(plas %in% seqcrade )) %>% # ne garde que les séquences propres 
+    filter(!is.na(snp)) %>% # ne garde que les positions de SNP
+    filter(mutt == "strong") %>%
+    filter(ubas != "N") %>% # ne garde que les postions de pic secondaire
+    rowwise() %>% 
+    mutate(plas = gsub(pat= "p.", rep = "", x = plas) ) %>% # remplace les
+                                                            # caractères inutiles
+    ungroup() %>%
+    group_by(plas) %>% # compte le nombre d'occurence par transformant
+    summarise(count = n()) %>%
+    ungroup() %>%
+    mutate(plas  = as.integer(plas)) %>% # même types pour le join
+    left_join(plaque, y = ., by = c("puit" = "plas")) %>% # joint sur le puit
+    mutate(count = replace(count, is.na(count), 0))  %>% # remplace les NA par 0
+    {.$count %>% matrix(nrow = 8, ncol = 12)} ->
+    strong_plaque
+
+  print(strong_plaque)
 
   #' Il semblerait que les séquences contaminées soient réparties uniformément
   #' dans les séquences _strong_, mais qu'elles soient clusterisées autour de deux
   #' "secteur" dans la plaque _weak_.
+
+  #' On a vu avec Laurent pour mettre au point une simulation. Celle ci nous
+  #' permettrait de voir la répartition des puits avec voisins contaminés sous
+  #' l'hypothèse d'une répartition aléatoire. Si la moyenne du nombre de puits
+  #' avec voisins contaminés n'est obtenue qu'un petit nombre de fois dans la
+  #' simulation, alors au risque égal à $10^{-X}$, avec X le nombre de
+  #' répétitions, on peut dire que la répartition des puits contaminés n'est pas
+  #' dûe au hasard.
+
+  library(assertthat) # tests
+
+  # une fonction qui génère un sampler entre 1 et n.
+  random_well <- function(n) sample(1:n, 1)
+
+  # une fonction qui initialise la plaque à 0 conta par puit
+  initiate_plate <- function() matrix(rep(0, 96), nrow = 8, ncol = 12)
+
+  # une fonction qui transforme l'entrée en matrice. par défaut, crée une plaque
+  # vide. doublon. conservée par inertie. et flemme.
+  as.plate <- function(mat = initiate_plate()) matrix(mat, nrow = 8, ncol = 12)
+
+  # génère une plaque avec n puits contaminés dedans.
+  plate_generator <- function(plate = as.plate(), n) {
+    assert_that(is.matrix(plate), is.numeric(n), n < 96)
+
+    # une fonction qui contamine un puit dans la plaque s'il ne l'est pas déjà.
+    contaminer <- function(mat) {
+      assert_that(is.matrix(mat))
+
+      x <- random_well(8)  # tire une ligne au hasard
+      y <- random_well(12) # tire une colonne au hasard
+
+      # si le puit n'est pas déjà contaminé, contamine le.
+      # sinon, tire un autre puit et contamine le.
+      if (mat[x, y] != 1) { mat[x, y] <- 1; return(as.matrix(mat)) }
+      else { contaminer(mat = as.matrix(mat)) }
+    } 
+
+    # si la plaque n'a pas déjà n puits contaminés, contamine une plaque avec n-1
+    # puits, et ainsi de suite.
+    # si la plaque a déjà n puits contaminés, renvoit là. 
+    if (sum(plate < n )) { plate_generator(as.plate(plate) %>% contaminer(), n - 1) }
+    else                 { return(as.plate(plate)) }
+  }
+
+  # génére n plaques contaminées avec n_conta inside.
+  n_plate_generator <- function(n_plate, n_conta)
+    lapply(1:n_plate, function(i) plate_generator(n=n_conta))
+
+  ### example use :
+  ### ============= 
+  ## n_plate_generator(3, 3)
+
+  # une fonction qui teste si les puits voisins sont contaminés. Elle est
+  # profondément testée. DO NOT EVEN THINK OF TOUCHING IT.
+  has_nearby_conta <- function(plate, ligne, colonne) {
+    assert_that(is.matrix(plate), is.numeric(ligne), is.numeric(colonne))
+
+    x      <- ligne
+    y      <- colonne
+    p      <- plate
+    nearby <- c()
+
+    bord_gauche     <- function(col) ifelse(col == 1 , TRUE, FALSE)
+    bord_droite     <- function(col) ifelse(col == 12, TRUE, FALSE)
+    bord_sup        <- function(row) ifelse(row == 1 , TRUE, FALSE)
+    bord_inf        <- function(row) ifelse(row == 8 , TRUE, FALSE)
+
+    coin_sup_gauche <- function(row, col) ifelse(bord_gauche(col) & bord_sup(row), TRUE, FALSE)
+    coin_inf_gauche <- function(row, col) ifelse(bord_gauche(col) & bord_inf(row), TRUE, FALSE)
+    coin_inf_droite <- function(row, col) ifelse(bord_droite(col) & bord_inf(row), TRUE, FALSE)
+    coin_sup_droite <- function(row, col) ifelse(bord_droite(col) & bord_sup(row), TRUE, FALSE)
+
+    if      (coin_sup_gauche(x, y)) { nearby <- c(nearby, p[x, y+1], p[x+1, y+1], p[x+1, y])}
+    else if (coin_inf_gauche(x, y)) { nearby <- c(nearby, p[x-1, y], p[x-1, y+1], p[x, y+1])}
+    else if (coin_sup_droite(x, y)) { nearby <- c(nearby, p[x, y-1], p[x+1, y-1], p[x+1, y])}
+    else if (coin_inf_droite(x, y)) { nearby <- c(nearby, p[x, y-1], p[x-1, y-1], p[x-1, y])}
+    else if (bord_gauche(y))        { nearby <- c(nearby, p[x-1, y], p[x-1, y+1], p[x, y+1], p[x+1, y+1], p[x+1, y])}
+    else if (bord_droite(y))        { nearby <- c(nearby, p[x-1, y], p[x-1, y-1], p[x, y-1], p[x+1, y-1], p[x+1, y])}
+    else if (bord_sup(x))           { nearby <- c(nearby, p[x, y-1], p[x+1, y-1], p[x+1, y], p[x+1, y+1], p[x, y+1])}
+    else if (bord_inf(x))           { nearby <- c(nearby, p[x, y-1], p[x-1, y-1], p[x-1, y], p[x-1, y+1], p[x, y+1])}
+    else {
+      nearby <- c(nearby,
+                  p[x-1, y-1], p[x, y-1], p[x+1, y-1],
+                  p[x-1, y  ],            p[x+1, y  ],
+                  p[x-1, y+1], p[x, y+1], p[x+1, y+1] )
+    }
+
+    ## normalise to 1 if > 1
+    nearby[nearby > 0] <- 1
+    ## return TRUE if one neighbor is contaminated, false either.
+    ## ifelse(sum(nearby) > 0, TRUE, FALSE) 
+
+    ## compte la moyenne du nombre de cas positif pour ce puit 
+    return(mean(nearby))
+  }
+
+  # compte la moyenne par plaque de la moyenne du nombre de puits DONT LES
+  # VOISINS sont contaminés
+  count_nearby_conta_well <- function(plate) {
+    # retrouve les indices des positions par colonne qui sont contaminés
+    locate_conta_well <- function(plate) which(plate != 0, arr.ind = TRUE)
+
+    # listes des coordonnées des puits avec conta
+    well_list <- locate_conta_well(plate)
+
+    # applique à cette liste la fonction qui permet de retrouver la moyenne du
+    # nombre de puit contaminé autour de la position donnée par x[1] et x[2]
+    apply(well_list, 1,
+          function(x) has_nearby_conta(plate, ligne = x[1], colonne = x[2])) %>%
+      # moyenne ces moyennes sur l'ensemble de la plaque
+      mean()
+  }
+
+  # compte le nombre de puits contaminés
+  count_conta <- function(plate) length(which(plate != 0))
+
+  count_conta(strong_plaque) # => 11
+  count_conta(weak_plaque) # => 35
+
+  # nombre de plaque dans la simulation
+  n_plaque <- 10000
+
+
+  #' lance la simulation pour les plaques.
+
+  ## crée une liste de n_plaque qui contient count_conta(*_plaque) réparties
+  ## aléatoirement sur la plaque.
+  random_weak        <- n_plate_generator(n_plaque, count_conta(weak_plaque)  ) # takes approx 20''
+  random_strong      <- n_plate_generator(n_plaque, count_conta(strong_plaque)) # takes approx 20''
+  random_weak_mean   <- lapply(random_weak  , count_nearby_conta_well) # takes approx 30''
+  random_strong_mean <- lapply(random_strong, count_nearby_conta_well) # takes approx 30''
+
+  # une fonction pour convertir les résultats de lapply en vecteur puis data.frame
+  # et représenter la distribution.
+  plot_mean_distrib <- function(rdm_list) {
+    assert_that(is.list(rdm_list))
+
+    rdm_list %>% unlist() %>% data.frame(wellcount = .) %>%
+      ggplot(aes(wellcount)) + geom_histogram(binwidth = 0.0005, fill = "gray") +
+      labs(x = "Moyenne par plaque de la moyenne du\nnombre de puits voisin contamine par puit", y = "") +
+      theme(panel.ontop = TRUE,
+            panel.grid.major.y = element_line(colour = "white", size = 0.5, linetype = "dotted"),
+            panel.grid.minor.y = element_line(colour = "white", size = 0.5, linetype = "dotted"))
+  }
+
+  ,#+ randomweakmean
+  plot_mean_distrib(random_weak_mean) +
+    geom_vline(xintercept = count_nearby_conta_well(weak_plaque), color = "red") 
+
+  ,#+ randomstrongmean
+  plot_mean_distrib(random_strong_mean) +
+    geom_vline(xintercept = count_nearby_conta_well(strong_plaque), color = "red") 
+
+  # en admettant une distribution normale, calcule la statistique associée 
+  pnorm(q = count_nearby_conta_well(weak_plaque),
+        mean = mean(random_weak_mean %>% unlist()),
+        sd   =   sd(random_weak_mean %>% unlist()),
+        lower.tail = FALSE) %>% print() # => 0.003313558
+
+  pnorm(q = count_nearby_conta_well(strong_plaque),
+        mean = mean(random_strong_mean %>% unlist()),
+        sd   =   sd(random_strong_mean %>% unlist()),
+        lower.tail = FALSE) %>% print() # => 0.8288228
 #+END_SRC
 
+Clique ici pour la version =knitr= du rapport : [[http://sam217pa.github.io/seq-novembre/scripts/polymorph.html][Description des positions
+polymorphes]]. 
 
 * Makefile 
 #+BEGIN_SRC makefile :tangle ./Makefile
